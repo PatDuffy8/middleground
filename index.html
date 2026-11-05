@@ -321,11 +321,11 @@ async function openVideo(meta){
    moments is optional: [startSeconds, endSeconds, "title"]. Leave it out to find highlights automatically.
    The two entries below are examples. Replace them with your own picks. */
 const FEATURED = [
-  {ytId:"_c2e1NcI3Sc"},
-  {ytId:"lKCTJp3PQX0"},
-  {ytId:"6VTSAs4Rsck"},
-  {ytId:"4PDLO-iC3FM"},
-  {ytId:"qW1xbhW2PEE"}
+  {ytId:"_c2e1NcI3Sc", cat:"Entertainment", moments:[[0,25,"The bet: beat the world's best athletes for $100,000"],[210,238,"A random subscriber has $100,000 on the line"],[290,315,"Thea goes for 77 spins"],[895,920,"Gordon takes his first-ever loss"],[1210,1235,"Simone Biles: almost there"],[1315,1339,"The LeBron finish: won by one"]]},
+  {ytId:"lKCTJp3PQX0", cat:"Educational", moments:[[0,30,"Intro: Ancient Rome in 25 minutes"],[71,101,"The advanced aqueduct system"],[274,304,"Baths of Caracalla"],[572,602,"Circus Maximus"],[734,764,"The Roman Forum"],[903,933,"The Colosseum"],[1257,1287,"The Pantheon"]]},
+  {ytId:"6VTSAs4Rsck", cat:"Business", moments:[[135,170,"Why being adaptable matters"],[513,548,"Biggest mistakes young entrepreneurs make"],[676,711,"What all millionaires have in common"],[1127,1162,"Hate your job but have little savings?"],[1509,1544,"AI: opportunity or threat?"],[1877,1912,"Are we in a bubble?"],[3094,3129,"Is AI sending us into debt?"],[4332,4367,"Should everyone be an entrepreneur?"]]},
+  {ytId:"4PDLO-iC3FM", cat:"Entertainment", moments:[[0,30,"Alaska, winter, no sleeping bag"],[129,159,"Checking the ground temperature"],[273,303,"Fire starters"],[598,618,"Sleeping on the bare ground"],[620,650,"Soaking wet"],[766,796,"A cold night"],[1149,1179,"Stove installed"],[1427,1457,"Temperature check"]]},
+  {ytId:"qW1xbhW2PEE", cat:"Sports", moments:[[138,166,"Alshon Jeffery's deep touchdown"],[538,566,"Brady to Gronkowski, back to back"],[826,856,"Zach Ertz scores"],[888,918,"The fumble of the game"],[1015,1045,"Eagles win: the long drought is over"]]},
 ];
 /* Add  cat:"Sports"  (or "TV & Film", "News", "Educational", "Business", "Tech & Science", "Comedy", "Entertainment", "Gaming", "Music") to place a video in a row.
    Without cat, the row is picked from the video's YouTube category when an API key is set, otherwise it goes under "Featured".
