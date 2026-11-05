@@ -1,0 +1,645 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Middleground</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&display=swap">
+<style>
+/* Layout: top bar with a heavy rule, tabbed home, hairline-bordered square tiles, mono numerals for time. Black backdrop, white text throughout.
+   Direction: efficiency. Black and white only, IBM Plex, no accent colour, no rounding. */
+:root{
+  --bg:#000000; --fg:#ffffff; --muted:#a6a6a6; --line:#333333; --panel:#161616;
+  --ink:#000000; --ink-fg:#ffffff; --ink-muted:#bdbdbd; --ink-line:#4a4a4a;
+  --sans:"IBM Plex Sans",ui-sans-serif,system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  --display:"Source Serif 4",Georgia,"Times New Roman",serif; --body:var(--sans); --accent:var(--fg); --accent-ink:var(--bg); --danger:var(--fg);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--fg);font:15px/1.5 var(--body);overflow:hidden}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid currentColor;outline-offset:2px}
+.app{height:100%;display:flex;flex-direction:column}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:12px;border-bottom:2px solid var(--fg);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.brand{font:600 15px/1 var(--sans);letter-spacing:.12em;text-transform:uppercase;display:flex;align-items:center;gap:10px;background:none;border:0;padding:0}
+.brand i{width:12px;height:18px;background:linear-gradient(var(--fg) 0 42%,transparent 42% 58%,var(--fg) 58%)}
+.tag{font:500 11px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+main{flex:1;min-height:0;overflow:auto;position:relative}
+.wrap{max-width:960px;margin:0 auto;padding-block:28px 56px;display:grid;gap:28px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2{font-family:var(--display);text-wrap:balance;margin:0}
+h1{font-size:clamp(28px,5vw,44px);font-weight:600;line-height:1.1;letter-spacing:-.015em;overflow-wrap:anywhere}
+h2{font-family:var(--sans);font-size:12px;font-weight:600;letter-spacing:.12em;text-transform:uppercase}
+p{margin:0;max-width:62ch;color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
+.tile{background:var(--bg);border:1px solid var(--line);border-radius:0;padding:12px;display:grid;gap:10px;text-align:left;min-width:0;align-content:start}
+button.tile:hover{border-color:var(--fg)}
+.tile .thumb{aspect-ratio:16/9;max-width:100%;background:#111;display:grid;place-items:center;overflow:hidden;color:var(--muted);font-size:13px}
+.tile .thumb img,.tile .thumb video{width:100%;height:100%;object-fit:cover;filter:grayscale(1) contrast(1.05)}
+.tile b{font-weight:600;overflow-wrap:anywhere;line-height:1.3}
+.meta{font:500 12px var(--mono);color:var(--muted);font-variant-numeric:tabular-nums}
+.btn{border:1px solid var(--fg);background:var(--bg);color:var(--fg);border-radius:0;padding:9px 18px;font-weight:600}
+.btn:hover{background:var(--panel)}
+.btn.primary{background:var(--fg);color:var(--bg)}
+.btn.primary:hover{background:#d9d9d9}
+.btn.danger{border-color:var(--line);color:var(--muted);font-weight:500}
+.btn:disabled{opacity:.4;cursor:default}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.urlform{display:flex;gap:10px;flex-wrap:wrap}
+.urlform input{flex:1 1 280px;min-width:0;background:var(--bg);border:1px solid var(--fg);border-radius:0;padding:10px 14px}
+.urlform input::placeholder{color:#7a7a7a}
+#msg{min-height:1.5em;font-size:14px;color:var(--muted)}
+#msg.err{color:var(--fg);font-weight:600}
+.editor{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:24px}
+@media (max-width:760px){.editor{grid-template-columns:1fr}}
+.player{width:100%;aspect-ratio:16/9;background:#000;overflow:hidden}
+.player iframe,.player video{width:100%;height:100%;border:0;display:block}
+.list{display:grid;gap:8px}
+.m{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;background:var(--bg);border:1px solid var(--line);padding:8px 10px}
+.m input{background:transparent;border:0;border-bottom:1px solid transparent;min-width:0;width:100%;padding:2px 0}
+.m input:focus{border-bottom-color:var(--fg);outline:none}
+.m .x{background:none;border:0;color:var(--muted);font-size:18px;padding:0 4px}
+.m .x:hover{color:var(--fg)}
+.n{font:500 12px var(--mono);color:var(--fg);background:none;border:0;padding:0;font-variant-numeric:tabular-nums;text-decoration:underline;text-underline-offset:3px}
+.empty{color:var(--muted);font-size:14px;padding:12px;border:1px dashed var(--line)}
+[hidden]{display:none!important}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line)}
+.tab{background:none;border:0;border-bottom:2px solid transparent;margin-bottom:-1px;padding:10px 18px 10px 0;margin-right:14px;font:600 14px var(--body);letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.tab:hover{color:var(--fg)}
+.tab.on{color:var(--fg);border-bottom-color:var(--fg)}
+.rowhead{display:flex;align-items:baseline;justify-content:space-between;gap:12px;border-bottom:1px solid var(--line);padding-bottom:8px}
+.shelf{display:flex;gap:16px;overflow-x:auto;scroll-snap-type:x proximity;padding-bottom:10px;scrollbar-width:thin;scrollbar-color:var(--line) transparent}
+.shelf .tile{flex:0 0 min(260px,74vw);scroll-snap-align:start}
+.note{font-size:13px;color:var(--muted);max-width:70ch}
+.note summary{cursor:pointer}
+/* Feed */
+.feedwrap{position:absolute;inset:0;background:var(--ink);color:var(--ink-fg)}
+.feed{height:100%;overflow-y:auto;scroll-snap-type:y mandatory}
+.feedtop{position:absolute;top:12px;left:max(12px,env(safe-area-inset-left,0px));right:max(12px,env(safe-area-inset-right,0px));display:flex;justify-content:space-between;gap:8px;z-index:3;pointer-events:none}
+.feedtop>*{pointer-events:auto}
+.pill{background:var(--ink);border:1px solid var(--ink-fg);color:var(--ink-fg);border-radius:0;padding:6px 12px;font-weight:600}
+.pill.meta{font:500 12px var(--mono);color:var(--ink-fg);display:flex;align-items:center}
+.card{height:100%;scroll-snap-align:start;scroll-snap-stop:always;display:flex;flex-direction:column;justify-content:center;
+  padding:56px max(16px,env(safe-area-inset-right,0px)) calc(16px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.col{width:100%;max-width:max(280px,min(960px,calc((100dvh - 240px) * 1.778)));margin:0 auto;display:grid;gap:14px}
+.box{aspect-ratio:16/9;background:#111;overflow:hidden}
+.box iframe,.box video{width:100%;height:100%;border:0;display:block;object-fit:contain}
+.box .empty{color:var(--ink-muted);border-color:var(--ink-line)}
+.cap{display:grid;gap:6px}
+.cap .src{font:500 12px var(--mono);color:var(--ink-muted);overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+.cap h3{margin:0;font:600 clamp(20px,4vw,28px)/1.15 var(--display);letter-spacing:-.015em;color:var(--ink-fg);overflow-wrap:anywhere}
+.bar{height:3px;background:var(--ink-line)}
+.bar span{display:block;height:100%;width:0;background:var(--ink-fg)}
+</style>
+<script>
+/* Set up the promise BEFORE the YouTube script loads */
+window.ytReady = new Promise(function(res){
+  window.onYouTubeIframeAPIReady = res;
+});
+</script>
+<script src="https://www.youtube.com/iframe_api" async></script>
+</head>
+<body>
+<div class="app">
+  <header>
+    <button class="brand" id="home" aria-label="Library"><i></i>Middleground</button>
+    <span class="tag">v0.11</span>
+  </header>
+  <main id="main"></main>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fmt = t => { t = Math.max(0, Math.round(t)); return Math.floor(t/60) + ":" + String(t%60).padStart(2, "0"); };
+const store = {
+  get(k){ try { return JSON.parse(localStorage.getItem(k)); } catch(e){ return null; } },
+  set(k,v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} }
+};
+
+/* ---------- State ---------- */
+const LIB_KEY = "mg:library";
+let videos = (store.get(LIB_KEY) || []).map(v => Object.assign({}, v, {type:"yt"}));
+const persist = () => store.set(LIB_KEY, videos.filter(v => v.type === "yt"));
+const cleanup = [];
+function leave(){ cleanup.splice(0).forEach(f => { try { f(); } catch(e){} }); }
+
+/* ---------- YouTube helpers ---------- */
+function parseId(s){
+  s = (s || "").trim();
+  if (/^[\w-]{11}$/.test(s)) return s;
+  try {
+    const u = new URL(/^https?:/i.test(s) ? s : "https://" + s);
+    const h = u.hostname.replace(/^www\.|^m\./, "");
+    if (h === "youtu.be") return u.pathname.slice(1, 12) || null;
+    if (h.endsWith("youtube.com")) {
+      const v = u.searchParams.get("v");
+      if (v) return v.slice(0, 11);
+      const m = u.pathname.match(/^\/(embed|shorts|live|v)\/([\w-]{11})/);
+      if (m) return m[2];
+    }
+  } catch(e){}
+  return null;
+}
+function errMsg(code){
+  return ({
+    2:"That link isn't a valid YouTube video.",
+    5:"YouTube couldn't play this video in the player.",
+    100:"Video not found, or it is private.",
+    101:"The owner of this video turned off embedding, so it can't be used here.",
+    150:"The owner of this video turned off embedding, so it can't be used here.",
+    153:"YouTube refused the embed. Open this site from its hosted web address, not from a file on your computer."
+  })[code] || "YouTube couldn't load this video (error " + code + ").";
+}
+function withTimeout(p, ms, msg){
+  return Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(msg), ms))]);
+}
+const loadYT = () => withTimeout(window.ytReady, 8000, "Couldn't reach YouTube. Check your connection and reload.");
+
+function fetchMeta(id){
+  return loadYT().then(() => new Promise((res, rej) => {
+    const holder = document.createElement("div");
+    holder.style.cssText = "position:fixed;left:-9999px;top:0;width:320px;height:180px";
+    const inner = document.createElement("div");
+    holder.appendChild(inner); document.body.appendChild(holder);
+    let done = false, p, timer;
+    const finish = (fn, val) => {
+      if (done) return; done = true; clearInterval(timer);
+      try { p.destroy(); } catch(e){}
+      holder.remove(); fn(val);
+    };
+    p = new YT.Player(inner, {videoId:id, playerVars:{playsinline:1}, events:{
+      onReady: () => {
+        let n = 0;
+        timer = setInterval(() => {
+          const d = p.getDuration();
+          if (d > 0) finish(res, {title:(p.getVideoData() || {}).title || "YouTube video", duration:d});
+          else if (++n > 40) finish(rej, "Couldn't read this video's length.");
+        }, 250);
+      },
+      onError: e => finish(rej, errMsg(e.data))
+    }});
+  }));
+}
+
+/* ---------- Splitting ---------- */
+/* Cuts the whole video into back-to-back clips of L seconds. This runs every time a video is added. */
+function splitVideo(v, d, L){
+  if (!d) return;
+  L = Math.min(120, Math.max(5, L || 30));
+  const ms = [];
+  for (let s = 0; s < d; s += L) {
+    if (d - s < 3 && ms.length) { ms[ms.length-1].end = d; break; }
+    ms.push({start:s, end:Math.min(s+L, d), title:"Part " + (ms.length+1)});
+  }
+  v.moments = ms; save(v);
+}
+function save(v){
+  v.moments.sort((a,b) => a.start - b.start);
+  if (v.type === "yt") persist();
+}
+
+/* ---------- YouTube Data API: search, suggestions, highlights ---------- */
+const API = "https://www.googleapis.com/youtube/v3/";
+const YT_API_KEY = ""; // optional: paste your key here once the site is hosted
+const getKey = () => YT_API_KEY || store.get("mg:key") || "";
+
+async function api(path, params){
+  const key = getKey();
+  if (!key) throw "no-key";
+  const u = new URL(API + path);
+  Object.entries(Object.assign({}, params, {key})).forEach(([k, v]) => u.searchParams.set(k, v));
+  const r = await fetch(u);
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw (j.error && j.error.errors && j.error.errors[0] && j.error.errors[0].reason) || ("http" + r.status);
+  return j;
+}
+function apiErr(e){
+  if (typeof e === "string" && e.includes(" ")) return e;   // already a readable message
+  return ({
+    "no-key":"Add a YouTube API key to use search and suggestions.",
+    quotaExceeded:"YouTube's daily limit for this key is used up. Try again tomorrow.",
+    keyInvalid:"That API key isn't valid.",
+    accessNotConfigured:"Turn on “YouTube Data API v3” for this key in Google Cloud.",
+    ipRefererBlocked:"This key is restricted to other web addresses. Add this site's address to the key's allowed list."
+  })[e] || ("YouTube request failed (" + e + ").");
+}
+function isoSec(s){
+  const m = /PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/.exec(s || "");
+  return m ? (+m[1] || 0) * 3600 + (+m[2] || 0) * 60 + (+m[3] || 0) : 0;
+}
+const mapItem = it => ({
+  ytId: it.id, name: it.snippet.title, channel: it.snippet.channelTitle,
+  duration: isoSec(it.contentDetails && it.contentDetails.duration),
+  embeddable: !it.status || it.status.embeddable !== false
+});
+const usable = m => m.embeddable && m.duration >= 60;
+async function getVideos(ids){
+  const j = await api("videos", {part:"snippet,contentDetails,status", id:ids.join(","), maxResults:50});
+  return (j.items || []).map(mapItem).filter(usable);
+}
+/* Highlights: find timestamps people write in comments ("3:42 best part") and cluster them */
+async function findHighlights(ytId, duration){
+  let items = [], tok;
+  for (let i = 0; i < 3; i++) {
+    const p = {part:"snippet", videoId:ytId, order:"relevance", maxResults:100, textFormat:"plainText"};
+    if (tok) p.pageToken = tok;
+    const j = await api("commentThreads", p);
+    items = items.concat(j.items || []);
+    tok = j.nextPageToken;
+    if (!tok) break;
+  }
+  const hits = [];
+  items.forEach(it => {
+    const s = it.snippet.topLevelComment.snippet;
+    const text = s.textDisplay || "";
+    const w = 1 + Math.log2(1 + (s.likeCount || 0));
+    for (const m of text.matchAll(/(?:(\d{1,2}):)?(\d{1,2}):(\d{2})\b/g)) {
+      if (+m[3] > 59 || (m[1] && +m[2] > 59)) continue;
+      const t = (+m[1] || 0) * 3600 + (+m[2]) * 60 + (+m[3]);
+      if (t >= duration) continue;
+      hits.push({t, w, text});
+    }
+  });
+  if (!hits.length) return null;
+
+  const B = 10, n = Math.ceil(duration / B) + 2, raw = new Array(n).fill(0);
+  hits.forEach(h => { raw[Math.floor(h.t / B)] += h.w; });
+  const sm = raw.map((x, i) => x + 0.5 * (raw[i-1] || 0) + 0.5 * (raw[i+1] || 0));
+  const want = Math.max(3, Math.min(10, Math.round(duration / 90)));
+  const order = sm.map((s, i) => [s, i]).sort((a, b) => b[0] - a[0]);
+  const peaks = [];
+  for (const [s, i] of order) {
+    if (s < 2 || peaks.length >= want) break;
+    if (peaks.every(p => Math.abs(p - i) >= 4)) peaks.push(i);
+  }
+  if (peaks.length < 3) return null;
+
+  const ms = peaks.map(i => {
+    const near = hits.filter(h => h.t >= i * B - 10 && h.t < i * B + 20);
+    const tw = near.reduce((a, h) => a + h.w, 0) || 1;
+    const t = near.reduce((a, h) => a + h.t * h.w, 0) / tw;
+    const best = near.slice().sort((a, b) => b.w - a.w)[0];
+    const start = Math.max(0, Math.round(t - 8));
+    const end = Math.min(duration, start + 25);
+    let title = ((best && best.text) || "").replace(/(?:\d{1,2}:)?\d{1,2}:\d{2}/g, "").replace(/\s+/g, " ").trim();
+    if (title.length > 70) title = title.slice(0, 67).trim() + "…";
+    return {start, end, title: title || "Moment viewers flagged", fan: true};
+  }).sort((a, b) => a.start - b.start);
+  return ms;
+}
+async function buildMoments(v, strict){
+  let ms = null, err = null;
+  try { ms = await findHighlights(v.ytId, v.duration); } catch(e) { err = e; }
+  if (ms) { v.moments = ms; save(v); return true; }
+  if (strict) throw (err ? apiErr(err) : "Not enough timestamped comments on this video to find highlights.");
+  splitVideo(v, v.duration, 30);
+  return false;
+}
+async function openVideo(meta){
+  let v = videos.find(x => x.ytId === meta.ytId);
+  if (!v) {
+    let duration = meta.duration, name = meta.name;
+    if (!duration) { const m = await fetchMeta(meta.ytId); duration = m.duration; name = name || m.title; }
+    v = {type:"yt", id:"yt:" + meta.ytId, ytId:meta.ytId, name:name, duration, moments:[], featured:!!meta.featured};
+    videos.unshift(v);
+  }
+  if (meta.moments) v.moments = meta.moments.map(([s, e, t]) => ({start:s, end:Math.min(e, v.duration), title:t || "Highlight"}));
+  if (!v.moments.length) await buildMoments(v, false);
+  persist();
+  feed(v);
+}
+
+/* ---------- Featured videos: EDIT THIS LIST ----------
+   Each entry: ytId (the part after v= in the link), name, channel (optional).
+   moments is optional: [startSeconds, endSeconds, "title"]. Leave it out to find highlights automatically.
+   The two entries below are examples. Replace them with your own picks. */
+const FEATURED = [
+  {ytId:"_c2e1NcI3Sc"},
+  {ytId:"lKCTJp3PQX0"},
+  {ytId:"6VTSAs4Rsck"},
+  {ytId:"4PDLO-iC3FM"},
+  {ytId:"qW1xbhW2PEE"}
+];
+/* Add  cat:"Sports"  (or "TV & Film", "News", "Educational", "Business", "Tech & Science", "Comedy", "Entertainment", "Gaming", "Music") to place a video in a row.
+   Without cat, the row is picked from the video's YouTube category when an API key is set, otherwise it goes under "Featured".
+   Titles load from YouTube automatically. To hand-pick a video's moments, add:  moments:[[start,end,"title"], ...]  (seconds) */
+
+/* ---------- Home ---------- */
+function say(t, err){
+  const m = $("#msg"); if (!m) return;
+  m.textContent = t ? (err ? "Error: " : "") + t : ""; m.className = err ? "err" : "";
+}
+function card(m, onClick){
+  const b = document.createElement("button"); b.className = "tile";
+  const reel = (m.moments || []).reduce((a, x) => a + (x.end - x.start), 0);
+  const len = reel && m.duration ? "Reel " + fmt(reel) + " of " + fmt(m.duration) : (m.duration ? fmt(m.duration) : "");
+  const sub = [m.channel ? esc(m.channel) : "", len].filter(Boolean).join(" · ");
+  b.innerHTML = `<div class="thumb"><img loading="lazy" src="https://i.ytimg.com/vi/${m.ytId}/mqdefault.jpg" alt=""></div>
+    <b>${esc(m.name || "Loading title…")}</b>${sub ? `<span class="meta">${sub}</span>` : ""}`;
+  b.onclick = onClick;
+  return b;
+}
+async function pick(meta){
+  say("Finding the best moments…");
+  const all = () => document.querySelectorAll("#main .tile, #main #addBtn");
+  all().forEach(t => { t.disabled = true; });
+  try { await openVideo(meta); }
+  catch(e) { say(apiErr(e), true); all().forEach(t => { t.disabled = false; }); }
+}
+
+let homeTab = location.hash === "#build" ? "diy" : "sug";
+function showTab(t){
+  homeTab = t;
+  ["sug", "diy"].forEach(k => {
+    $("#p-" + k).hidden = k !== t;
+    const b = $("#tab-" + k);
+    b.classList.toggle("on", k === t);
+    b.setAttribute("aria-selected", String(k === t));
+    b.tabIndex = k === t ? 0 : -1;
+  });
+  try { history.replaceState(null, "", t === "diy" ? "#build" : "#suggested"); } catch(e){}
+}
+const ROW_ORDER = ["Sports", "TV & Film", "News", "Educational", "Business", "Tech & Science", "Comedy", "Entertainment", "Gaming", "Music", "Featured"];
+const YT_CATS = {"17":"Sports", "1":"TV & Film", "25":"News", "27":"Educational", "28":"Tech & Science", "23":"Comedy", "24":"Entertainment", "20":"Gaming", "10":"Music"};
+function renderRows(){
+  const host = $("#rows"); if (!host) return;
+  host.innerHTML = "";
+  const groups = {};
+  FEATURED.forEach(f => { const c = ROW_ORDER.includes(f.cat) ? f.cat : "Featured"; (groups[c] = groups[c] || []).push(f); });
+  ROW_ORDER.filter(c => groups[c]).forEach(c => {
+    const sec = document.createElement("section"); sec.style.cssText = "display:grid;gap:12px";
+    sec.innerHTML = `<div class="rowhead"><h2>${esc(c)}</h2><span class="meta">${groups[c].length}</span></div><div class="shelf"></div>`;
+    groups[c].forEach(f => {
+      const t = card(f, () => pick(Object.assign({}, f, {featured:true})));
+      sec.querySelector(".shelf").appendChild(t);
+      if (!f.name) fillTitle(f, t);
+    });
+    host.appendChild(sec);
+  });
+}
+async function autoCategorize(){
+  const need = FEATURED.filter(f => !f.cat);
+  if (!need.length || !getKey()) return;
+  try {
+    const j = await api("videos", {part:"snippet", id:need.map(f => f.ytId).join(","), maxResults:50});
+    const by = {}; (j.items || []).forEach(it => { by[it.id] = YT_CATS[it.snippet.categoryId] || "Featured"; });
+    need.forEach(f => { f.cat = by[f.ytId] || "Featured"; });
+    renderRows();
+  } catch(e) {}
+}
+function fillTitle(f, el){
+  const set = t => { const b = el.querySelector("b"); if (b) b.textContent = t; };
+  fetch("https://www.youtube.com/oembed?format=json&url=" + encodeURIComponent("https://www.youtube.com/watch?v=" + f.ytId))
+    .then(r => r.ok ? r.json() : Promise.reject())
+    .then(j => { f.name = j.title; set(j.title); })
+    .catch(() => set("YouTube video"));
+}
+function home(){
+  leave();
+  const hasKey = !!store.get("mg:key");
+  $("#main").innerHTML = `<div class="wrap">
+    <div style="display:grid;gap:8px"><h1>Skip the full video. Get the moments.</h1>
+    <p>Long videos, cut down to what is worth your time. Every reel has an end.</p></div>
+    <div class="tabs" role="tablist" aria-label="Sections">
+      <button class="tab" role="tab" id="tab-sug" aria-controls="p-sug">Suggested</button>
+      <button class="tab" role="tab" id="tab-diy" aria-controls="p-diy">Build your own</button>
+    </div>
+    <div id="p-sug" role="tabpanel" aria-labelledby="tab-sug" style="display:grid;gap:12px"><p>Selected videos, already cut to their key moments.</p><div id="rows" style="display:grid;gap:32px"></div></div>
+    <div id="p-diy" role="tabpanel" aria-labelledby="tab-diy" style="display:grid;gap:24px">
+    <section style="display:grid;gap:12px"><h2>Make a highlight reel</h2><p>Paste a YouTube link. Get a short reel of the key moments.</p>
+      <form class="urlform" id="addForm">
+        <input id="url" type="text" autocomplete="off" placeholder="Paste a YouTube link" aria-label="YouTube link">
+        <button class="btn primary" id="addBtn" type="submit">Make reel</button>
+      </form>
+      <div id="msg" role="status"></div></section>
+    <section id="libsec" style="display:grid;gap:12px" hidden><h2>Your reels</h2><div class="grid" id="lib"></div></section>
+    <details class="note"><summary>Developer: YouTube API key</summary>
+      <div style="display:grid;gap:8px;padding-top:8px">
+        <span>${hasKey ? "A key is saved in this browser." : "Optional. With a key, reels use the timestamps people write in comments. Without one, videos are cut into even 30-second clips."}</span>
+        <form class="urlform" id="keyForm"><input id="key" type="text" autocomplete="off" placeholder="API key" aria-label="API key"><button class="btn" type="submit">${hasKey ? "Replace key" : "Save key"}</button>${hasKey ? `<button class="btn danger" id="clearKey" type="button">Remove key</button>` : ""}</form>
+      </div></details></div>
+    <p class="note">Videos play in YouTube's own player. Views and ads still go to the creator. Some creators turn off embedding, and those videos can't be used.</p>
+  </div>`;
+
+  ["sug", "diy"].forEach(k => {
+    $("#tab-" + k).onclick = () => showTab(k);
+    $("#tab-" + k).onkeydown = e => {
+      if (e.key === "ArrowRight" || e.key === "ArrowLeft") { const o = k === "sug" ? "diy" : "sug"; showTab(o); $("#tab-" + o).focus(); }
+    };
+  });
+  showTab(homeTab);
+  renderRows();
+  autoCategorize();
+  const mine = videos.filter(v => !v.featured);
+  if (mine.length) {
+    $("#libsec").hidden = false;
+    mine.forEach(v => $("#lib").appendChild(card(v, () => pick(v))));
+  }
+
+  $("#keyForm").onsubmit = e => {
+    e.preventDefault();
+    const k = $("#key").value.trim();
+    if (k) { store.set("mg:key", k); home(); }
+  };
+  const ck = $("#clearKey");
+  if (ck) ck.onclick = () => { try { localStorage.removeItem("mg:key"); } catch(e){} home(); };
+
+  $("#addForm").onsubmit = async e => {
+    e.preventDefault();
+    const raw = $("#url").value.trim();
+    if (!raw) return;
+    const id = parseId(raw);
+    if (!id) return say("That doesn't look like a YouTube link.", true);
+    const have = videos.find(v => v.ytId === id);
+    if (have) return pick(have);
+    $("#addBtn").disabled = true; say("Loading video…");
+    try {
+      let meta;
+      if (getKey()) {
+        meta = (await getVideos([id]))[0];
+        if (!meta) throw "That video can't be embedded, or it is under a minute long.";
+      } else {
+        const m = await fetchMeta(id);
+        meta = {ytId:id, name:m.title, duration:m.duration};
+      }
+      say("Finding the best moments…");
+      await openVideo(meta);
+    } catch(err) { say(apiErr(err), true); $("#addBtn").disabled = false; }
+  };
+}
+
+/* ---------- Moments editor ---------- */
+function edit(v){
+  leave();
+  $("#main").innerHTML = `<div class="wrap">
+    <div class="row" style="justify-content:space-between"><h1>${esc(v.name)}</h1>
+      <button class="btn primary" id="go">Open feed</button></div>
+    <div class="editor">
+      <div style="display:grid;gap:12px;min-width:0;align-content:start">
+        <div class="player" id="ed">${v.type === "file" ? `<video id="vid" src="${v.url}" controls playsinline></video>` : `<div id="edslot"></div>`}</div>
+        <div class="row">
+          <button class="btn" id="mark">Mark clip here (10s)</button>
+          <button class="btn" id="hl">Find highlights</button>
+          <button class="btn" id="copyf">Copy as featured entry</button>
+          <button class="btn" id="resplit">Re-split</button>
+          <label class="meta" for="len">Clip length</label>
+          <input id="len" type="number" min="5" max="120" value="30" style="width:64px;background:var(--panel);border:1px solid var(--line);border-radius:0;padding:6px">
+          <span class="meta">sec</span>
+        </div>
+        <div class="note" id="hlmsg" role="status"></div>
+        <div><button class="btn danger" id="remove">Remove from library</button></div>
+      </div>
+      <div style="display:grid;gap:10px;align-content:start;min-width:0"><h2>Clips</h2><div class="list" id="list"></div></div>
+    </div></div>`;
+
+  let ctl;
+  if (v.type === "file") {
+    const vid = $("#vid");
+    ctl = {time:() => vid.currentTime, seek:t => { vid.currentTime = t; }, dur:() => vid.duration};
+    const ready = () => { v.duration = vid.duration; if (!v.moments.length) { splitVideo(v, vid.duration, 30); list(v, ctl); } };
+    vid.onloadedmetadata = ready;
+    if (vid.readyState >= 1) ready();
+  } else {
+    let player;
+    ctl = {time:() => (player && player.getCurrentTime) ? player.getCurrentTime() : 0,
+           seek:t => { if (player && player.seekTo) player.seekTo(t, true); },
+           dur:() => v.duration};
+    loadYT().then(() => {
+      if (!$("#edslot")) return;
+      player = new YT.Player("edslot", {width:"100%", height:"100%", videoId:v.ytId, playerVars:{playsinline:1, rel:0},
+        events:{onError:e => { $("#ed").outerHTML = `<div class="empty">${esc(errMsg(e.data))}</div>`; }}});
+    }).catch(msg => { $("#ed").outerHTML = `<div class="empty">${esc(msg)}</div>`; });
+    cleanup.push(() => { try { player && player.destroy(); } catch(e){} });
+  }
+
+  $("#mark").onclick = () => {
+    const t = ctl.time(), d = ctl.dur() || t + 10;
+    v.moments.push({start:t, end:Math.min(t + 10, d), title:"Clip at " + fmt(t)});
+    save(v); list(v, ctl);
+  };
+  const resplit = () => { splitVideo(v, ctl.dur(), +$("#len").value); list(v, ctl); };
+  $("#resplit").onclick = resplit;
+  $("#copyf").onclick = async () => {
+    const txt = `{ytId:${JSON.stringify(v.ytId)}, name:${JSON.stringify(v.name)}, moments:${JSON.stringify(v.moments.map(m => [Math.round(m.start), Math.round(m.end), m.title]))}},`;
+    try { await navigator.clipboard.writeText(txt); $("#hlmsg").textContent = "Copied. Paste it into the FEATURED list in index.html."; }
+    catch(e) { $("#hlmsg").textContent = txt; }
+  };
+  $("#hl").onclick = async () => {
+    const b = $("#hl"); b.disabled = true; b.textContent = "Searching…"; $("#hlmsg").textContent = "";
+    try { await buildMoments(v, true); list(v, ctl); }
+    catch(e) { $("#hlmsg").textContent = apiErr(e); }
+    b.disabled = false; b.textContent = "Find highlights";
+  };
+  $("#len").onchange = resplit;
+  $("#go").onclick = () => feed(v);
+  $("#remove").onclick = () => {
+    videos = videos.filter(x => x !== v); persist(); home();
+  };
+  list(v, ctl);
+}
+function list(v, ctl){
+  const el = $("#list"); if (!el) return;
+  el.innerHTML = "";
+  $("#go").disabled = !v.moments.length;
+  if (!v.moments.length) {
+    el.innerHTML = `<div class="empty">No clips yet. They appear as soon as the video loads.</div>`;
+    return;
+  }
+  v.moments.forEach((m, i) => {
+    const r = document.createElement("div"); r.className = "m";
+    r.innerHTML = `<button class="n" aria-label="Jump to ${fmt(m.start)}">${fmt(m.start)}</button>
+      <input value="${esc(m.title)}" aria-label="Clip title"><button class="x" aria-label="Remove clip">×</button>`;
+    r.querySelector("input").oninput = e => { m.title = e.target.value; save(v); };
+    r.querySelector(".n").onclick = () => ctl.seek(m.start);
+    r.querySelector(".x").onclick = () => { v.moments.splice(i, 1); save(v); list(v, ctl); };
+    el.appendChild(r);
+  });
+}
+
+/* ---------- Feed ---------- */
+function feed(v){
+  leave();
+  $("#main").innerHTML = `<div class="feedwrap">
+    <div class="feedtop"><button class="pill" id="back">← Clips</button><span class="pill meta" id="count"></span></div>
+    <div class="feed" id="feed"></div></div>`;
+  $("#back").onclick = () => edit(v);
+  const f = $("#feed");
+  v.moments.forEach((m, i) => {
+    const c = document.createElement("section"); c.className = "card"; c.dataset.i = i;
+    c.innerHTML = `<div class="col"><div class="box">${v.type === "file" ? `<video src="${v.url}" playsinline controls preload="metadata"></video>` : `<div class="slot"></div>`}</div>
+      <div class="cap"><span class="src">${esc(v.name)} · ${fmt(m.start)}–${fmt(m.end)}${m.fan ? " · viewer pick" : ""}</span><h3>${esc(m.title)}</h3><div class="bar"><span></span></div></div></div>`;
+    f.appendChild(c);
+  });
+  const reel = v.moments.reduce((a, m) => a + (m.end - m.start), 0);
+  const count = i => { $("#count").textContent = (i + 1) + " / " + v.moments.length + " · " + fmt(reel) + " of " + fmt(v.duration || 0); };
+  count(0);
+
+  let act = null;
+  const deactivate = () => { if (act) { act.stop(); act = null; } };
+
+  function activate(card){
+    if (act && act.card === card) return;
+    deactivate();
+    const m = v.moments[+card.dataset.i];
+    const bar = card.querySelector(".bar span");
+    bar.style.width = "0";
+    if (v.type === "file") {
+      const vd = card.querySelector("video");
+      vd.currentTime = m.start; vd.play().catch(() => {});
+      vd.ontimeupdate = () => {
+        bar.style.width = Math.min(100, (vd.currentTime - m.start) / (m.end - m.start) * 100) + "%";
+        if (vd.currentTime >= m.end) vd.currentTime = m.start;
+      };
+      act = {card, stop(){ vd.pause(); vd.ontimeupdate = null; }};
+      return;
+    }
+    /* YouTube: wait a moment so fast scrolling doesn't spawn a player per card */
+    const slot = card.querySelector(".slot");
+    let p, timer, alive = true;
+    const wait = setTimeout(() => {
+      loadYT().then(() => {
+        if (!alive) return;
+        slot.innerHTML = "<div></div>";
+        p = new YT.Player(slot.firstChild, {width:"100%", height:"100%", videoId:v.ytId,
+          playerVars:{autoplay:1, playsinline:1, rel:0, start:Math.floor(m.start), end:Math.ceil(m.end)},
+          events:{
+            onStateChange: e => {
+              if (e.data === YT.PlayerState.ENDED) p.loadVideoById({videoId:v.ytId, startSeconds:m.start, endSeconds:m.end});
+            },
+            onError: e => { slot.innerHTML = `<div class="empty" style="margin:16px">${esc(errMsg(e.data))}</div>`; }
+          }});
+        timer = setInterval(() => {
+          try {
+            const t = p.getCurrentTime();
+            bar.style.width = Math.max(0, Math.min(100, (t - m.start) / (m.end - m.start) * 100)) + "%";
+          } catch(e){}
+        }, 200);
+      }).catch(msg => { slot.innerHTML = `<div class="empty" style="margin:16px">${esc(msg)}</div>`; });
+    }, 250);
+    act = {card, stop(){
+      alive = false; clearTimeout(wait); clearInterval(timer);
+      try { p && p.destroy(); } catch(e){}
+      slot.innerHTML = "";
+    }};
+  }
+
+  const io = new IntersectionObserver(es => es.forEach(e => {
+    if (e.isIntersecting) { count(+e.target.dataset.i); activate(e.target); }
+    else if (act && act.card === e.target) deactivate();
+  }), {root:f, threshold:[.6]});
+  f.querySelectorAll(".card").forEach(c => io.observe(c));
+  cleanup.push(() => { deactivate(); io.disconnect(); });
+}
+
+$("#home").onclick = home;
+home();
+</script>
+</body>
+</html>
