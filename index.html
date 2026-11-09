@@ -76,6 +76,7 @@ button.tile:hover{border-color:var(--fg);border-top-color:var(--accent,var(--fg)
 .tab.on{color:var(--fg);border-bottom-color:var(--fg)}
 .rowhead{display:flex;align-items:baseline;justify-content:space-between;gap:12px;border-bottom:1px solid var(--line);padding-bottom:8px}
 .rowhead h3{margin:0;font:600 12px/1.4 var(--sans);letter-spacing:.12em;text-transform:uppercase;color:var(--accent,var(--fg));display:flex;align-items:center;gap:10px}
+.adfree{display:inline-block;font:600 10px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:#000;background:var(--accent,#fff);padding:3px 6px;margin-right:6px;vertical-align:2px}
 .rowhead h3::before{content:"";width:9px;height:9px;background:var(--accent,var(--fg))}
 .grouphead{display:grid;gap:6px;padding-top:8px}
 .grouphead h2{font:600 clamp(28px,5vw,40px)/1.1 var(--display);letter-spacing:-.015em;text-transform:none}
@@ -136,7 +137,7 @@ window.ytReady = new Promise(function(res){
 <div class="app">
   <header>
     <button class="brand" id="home" aria-label="Library"><i></i>Middleground</button>
-    <span class="tag">v0.18</span>
+    <span class="tag">v0.19</span>
   </header>
   <main id="main"></main>
 </div>
@@ -365,6 +366,12 @@ const FEATURED = [
   {ytId:"lKCTJp3PQX0", cat:"Educational", moments:[[0,30,"Intro: Ancient Rome in 25 minutes"],[71,101,"The advanced aqueduct system"],[274,304,"Baths of Caracalla"],[572,602,"Circus Maximus"],[734,764,"The Roman Forum"],[903,933,"The Colosseum"],[1257,1287,"The Pantheon"]]},
   {ytId:"6VTSAs4Rsck", cat:"Business", moments:[[135,170,"Why being adaptable matters"],[513,548,"Biggest mistakes young entrepreneurs make"],[676,711,"What all millionaires have in common"],[1127,1162,"Hate your job but have little savings?"],[1509,1544,"AI: opportunity or threat?"],[1877,1912,"Are we in a bubble?"],[3094,3129,"Is AI sending us into debt?"],[4332,4367,"Should everyone be an entrepreneur?"]]},
   {ytId:"4PDLO-iC3FM", cat:"Outdoors", moments:[[0,30,"Alaska, winter, no sleeping bag"],[129,159,"Checking the ground temperature"],[273,303,"Fire starters"],[598,618,"Sleeping on the bare ground"],[620,650,"Soaking wet"],[766,796,"A cold night"],[1149,1179,"Stove installed"],[1427,1457,"Temperature check"]]},
+  {ytId:"hy-4NxJRxNQ", cat:"Outdoors", moments:[[1,39,"Dick Proenneke comes to Alaska"],[424,462,"The canoe on a cold lake"],[634,666,"A bear emerges with twin cubs"],[783,817,"Cutting a hole in the lake ice for water"],[1025,1062,"After the snow: reading tracks"],[1202,1237,"The sun clears the mountain"],[1474,1511,"Into the high mountain country"]]},
+  {ytId:"sSsTR8qqDl4", cat:"Outdoors", moments:[[90,126,"Beach finds: urchin skeletons"],[265,294,"Camp set up just in time"],[348,391,"A gorgeous cold morning"],[594,624,"Letting the current take him down the river"],[828,859,"The best water filter system"],[1067,1105,"Cooking rockfish with green chilies"],[1237,1274,"Paddling against the current"],[1439,1475,"Loading the oven with wood"]]},
+  {ytId:"ep-xRQDTiOg", cat:"Outdoors", moments:[[240,260,"Alex Honnold: best known for free soloing El Capitan"],[446,465,"The right team for a trip like this"],[650,674,"How water beneath a glacier speeds it up"],[1175,1197,"Hazel: climbing since age six"],[1389,1411,"The Pool Wall: a lifetime route"],[1718,1738,"Water freezes in the cracks and splits the rock"],[2436,2463,"Anxiety on the wall"],[2693,2719,"Near the summit: “Whoa!”"]]},
+  {ytId:"A5w-dEgIU1M", cat:"Educational", moments:[[0,34,"One equation, four multi-trillion dollar industries"],[352,380,"Why options give you leverage"],[513,538,"No arbitrage: no profit without risk"],[915,937,"Betting more when you have an edge"],[1132,1169,"Fischer Black and Myron Scholes get there first"],[1344,1380,"GameStop and options"],[1536,1574,"Black is credited, too late"],[1707,1734,"The Medallion Fund: the ultimate counterexample"]]},
+  {ytId:"mScpHTIi-kM", cat:"Educational", moments:[[0,22,"The most famous problem in game theory"],[151,177,"The prisoner's dilemma"],[334,354,"Played once, the rational move is to defect"],[478,501,"Strategies in the tournament"],[752,777,"Why knowing the last round changes everything"],[957,984,"Tit for Two Tats and the first tournament"],[1136,1167,"Life forms play the prisoner's dilemma too"],[1317,1337,"Tit for Tat does really well"]]},
+  {ytId:"S7TUe5w6RHo", cat:"Educational", moments:[[33,53,"Earth: a hell of lava"],[408,432,"The young solar system"],[1069,1099,"Stromatolites: rocks built by early life"],[1431,1461,"2.8 billion years ago: the Neoarchean"],[1816,1842,"The planet freezes over for the first time"],[2377,2399,"1.6 billion years ago"],[2853,2879,"1 billion years ago: the Tonian"],[3215,3234,"539 million years ago: the Cambrian explosion"],[3578,3606,"Paradise: life is thriving... wait, what's that?"]]},
   {ytId:"O8Szz1bAEsI", cat:"Sports", moments:[[0,20,"Oakmont: the hardest course in golf"],[40,75,"Miss the fairway and this is what you face"],[392,429,"Course strategy off the tee"],[781,807,"“That's slower than I thought”"],[1177,1212,"Midround: such a difficult test of golf"],[2046,2078,"Two under: “Let's go, baby”"],[2406,2431,"Hitting the green at the U.S. Open"]]},
   {ytId:"OYZBoXz6pkI", cat:"Sports", moments:[[0,30,"The final journey: Miami vs. Oklahoma City"],[39,69,"Game one build-up"],[133,163,"Game one intensity"],[354,384,"Preparing for game two"],[499,529,"Game two showdown"],[767,797,"The series shifts to Miami"],[866,896,"Game three battle"],[1204,1234,"Game four pressure"],[1534,1564,"Final preparations"],[1645,1685,"Miami wins the championship"]]},
   {ytId:"wfdQAHBfHPE", cat:"Sports", moments:[[17,39,"Arrival at Pebble Beach"],[210,232,"Exploring the mansion"],[696,716,"Setting the stage: “Oh my god”"],[1680,1700,"Hole 3: recovering from a double"],[2637,2658,"Hole 10: the wedge game"],[3240,3264,"Hole 14: “That's sick”"],[3666,3685,"Hole 18: two birdies needed"],[3736,3759,"A textbook approach shot"],[3983,4003,"The tournament concludes"]]},
@@ -387,7 +394,7 @@ function card(m, onClick){
   const len = reel && m.duration ? "Reel " + fmt(reel) + " of " + fmt(m.duration) : (m.duration ? fmt(m.duration) : "");
   const sub = [m.credit ? esc(m.credit) : (m.channel ? esc(m.channel) : ""), len].filter(Boolean).join(" · ");
   b.innerHTML = `<div class="thumb"><img loading="lazy" src="${m.thumb ? esc(m.thumb) : "https://i.ytimg.com/vi/" + m.ytId + "/mqdefault.jpg"}" alt=""></div>
-    <b>${esc(m.name || "Loading title…")}</b>${sub ? `<span class="meta">${sub}</span>` : ""}`;
+    <b>${m.src ? `<span class="adfree">Ad-free</span> ` : ""}${esc(m.name || "Loading title…")}</b>${sub ? `<span class="meta">${sub}</span>` : ""}`;
   b.onclick = onClick;
   return b;
 }
@@ -417,28 +424,19 @@ const YT_CATS = {"17":"Sports", "1":"TV & Film", "25":"News", "27":"Educational"
 function renderRows(){
   const host = $("#rows"); if (!host) return;
   host.innerHTML = "";
-  const parts = [
-    {title:"Popular", note:"Popular YouTube videos. These play in YouTube's player, so the creator's ads can show.", list:FEATURED.filter(f => !f.src)},
-    {title:"Ad-free", note:"Public-domain and government video. Plays in our own player with no ads.", list:FEATURED.filter(f => f.src)}
-  ];
-  parts.forEach(part => {
-    if (!part.list.length) return;
-    const wrap = document.createElement("div"); wrap.style.cssText = "display:grid;gap:24px";
-    wrap.innerHTML = `<div class="grouphead"><h2>${esc(part.title)}</h2><p>${esc(part.note)}</p></div>`;
-    const groups = {};
-    part.list.forEach(f => { const c = ROW_ORDER.includes(f.cat) ? f.cat : "Featured"; (groups[c] = groups[c] || []).push(f); });
-    ROW_ORDER.filter(c => groups[c]).forEach(c => {
-      const sec = document.createElement("section"); sec.style.cssText = "display:grid;gap:12px";
-      sec.style.setProperty("--accent", CATCOL[c] || "#fff");
-      sec.innerHTML = `<div class="rowhead"><h3>${esc(c)}</h3><span class="meta">${groups[c].length}</span></div><div class="shelf"></div>`;
-      groups[c].forEach(f => {
-        const t = card(f, () => pick(Object.assign({}, f, {featured:true})));
-        sec.querySelector(".shelf").appendChild(t);
-        if (!f.name) fillTitle(f, t);
-      });
-      wrap.appendChild(sec);
+  const groups = {};
+  /* popular YouTube picks first, ad-free files after them, inside each category */
+  FEATURED.filter(f => !f.src).concat(FEATURED.filter(f => f.src)).forEach(f => { const c = ROW_ORDER.includes(f.cat) ? f.cat : "Featured"; (groups[c] = groups[c] || []).push(f); });
+  ROW_ORDER.filter(c => groups[c]).forEach(c => {
+    const sec = document.createElement("section"); sec.style.cssText = "display:grid;gap:12px";
+    sec.style.setProperty("--accent", CATCOL[c] || "#fff");
+    sec.innerHTML = `<div class="rowhead"><h3>${esc(c)}</h3><span class="meta">${groups[c].length}</span></div><div class="shelf"></div>`;
+    groups[c].forEach(f => {
+      const t = card(f, () => pick(Object.assign({}, f, {featured:true})));
+      sec.querySelector(".shelf").appendChild(t);
+      if (!f.name) fillTitle(f, t);
     });
-    host.appendChild(wrap);
+    host.appendChild(sec);
   });
 }
 async function autoCategorize(){
@@ -632,7 +630,7 @@ function feed(v){
     const c = document.createElement("section"); c.className = "card"; c.dataset.i = i;
     if (v.cat && CATCOL[v.cat]) c.style.setProperty("--accent", CATCOL[v.cat]);
     c.innerHTML = `<div class="col"><div class="box">${v.type === "file" ? `<video src="${v.url}" playsinline controls preload="metadata"></video>` : `<div class="slot"></div>`}</div>
-      <div class="cap"><span class="src">${esc(v.name)} · ${fmt(m.start)}–${fmt(m.end)}${v.credit ? " · " + esc(v.credit) : ""}${m.fan ? " · viewer pick" : ""}</span><h3>${esc(m.title)}</h3><div class="bar"><span></span></div></div></div>`;
+      <div class="cap"><span class="src">${v.type === "file" ? "Ad-free · " : ""}${esc(v.name)} · ${fmt(m.start)}–${fmt(m.end)}${v.credit ? " · " + esc(v.credit) : ""}${m.fan ? " · viewer pick" : ""}</span><h3>${esc(m.title)}</h3><div class="bar"><span></span></div></div></div>`;
     f.appendChild(c);
   });
   const reel = v.moments.reduce((a, m) => a + (m.end - m.start), 0);
