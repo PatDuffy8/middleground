@@ -3,7 +3,18 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Middleground</title>
+<title>Middleground: the best moments of any video</title>
+<meta name="description" content="Skip the full video. Scroll the best moments of long videos, shows and films as short reels. Every reel has an end.">
+<meta name="theme-color" content="#000000">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Middleground">
+<meta property="og:title" content="Middleground: skip the full video, get the moments">
+<meta property="og:description" content="Long videos cut down to what is worth your time. Scroll the best moments. Every reel has an end.">
+<meta property="og:url" content="https://patduffy8.github.io/middleground/">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Middleground: skip the full video, get the moments">
+<meta name="twitter:description" content="Long videos cut down to what is worth your time. Every reel has an end.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23000'/%3E%3Crect x='10' y='5' width='12' height='9' fill='%23fff'/%3E%3Crect x='10' y='18' width='12' height='9' fill='%23fff'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://www.youtube.com">
 <link rel="preconnect" href="https://i.ytimg.com">
 <link rel="preconnect" href="https://archive.org">
@@ -99,6 +110,8 @@ button.tile:hover{border-color:var(--fg);border-top-color:var(--accent,var(--fg)
 .feedtop>*{pointer-events:auto}
 .pill{background:var(--ink);border:1px solid var(--ink-fg);color:var(--ink-fg);border-radius:0;padding:6px 12px;font-weight:600}
 .pill.meta{font:500 12px var(--mono);color:var(--ink-fg);display:flex;align-items:center}
+.feedtop .pill{white-space:nowrap}
+@media (max-width:480px){.feedtop{gap:6px}.feedtop .pill{padding:6px 8px;font-size:12px}.pill.meta{font-size:10.5px}}
 .card{height:100%;scroll-snap-align:start;scroll-snap-stop:always;display:flex;flex-direction:column;justify-content:center;
   padding:56px max(16px,env(safe-area-inset-right,0px)) calc(16px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
 .col{width:100%;max-width:max(280px,min(960px,calc((100dvh - 240px) * 1.778)));margin:0 auto;display:grid;gap:14px}
@@ -113,6 +126,15 @@ button.tile:hover{border-color:var(--fg);border-top-color:var(--accent,var(--fg)
 .bar{height:3px;background:var(--ink-line)}
 .bar span{display:block;height:100%;width:0;background:var(--accent,var(--ink-fg))}
 .card .cap .src{color:var(--ink-muted)}
+.sharebtn{justify-self:start;background:none;border:0;padding:4px 0;color:var(--ink-muted);font:500 12px var(--mono);letter-spacing:.06em;text-transform:uppercase;text-decoration:underline;text-underline-offset:3px}
+.sharebtn:hover{color:var(--ink-fg)}
+.endcard{height:100%;scroll-snap-align:start;scroll-snap-stop:always;overflow-y:auto;display:flex;flex-direction:column;justify-content:safe center;gap:22px;
+  padding:64px max(16px,env(safe-area-inset-right,0px)) calc(24px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.endcard>div{width:100%;max-width:960px;margin:0 auto;display:grid;gap:18px}
+.endcard h3{margin:0;font:600 clamp(30px,6vw,52px)/1.05 var(--display);letter-spacing:-.02em}
+.endcard .mark{font:600 12px var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--ink-muted)}
+.endcard .grid{grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+@media (max-width:600px){.endcard .tile .thumb{display:none}}
 .card .col{opacity:.3;transition:opacity .3s ease}
 .card.on .col{opacity:1}
 /* Build your own: larger */
@@ -143,7 +165,7 @@ window.ytReady = new Promise(function(res){
 <div class="app">
   <header>
     <button class="brand" id="home" aria-label="Library"><i></i>Middleground</button>
-    <span class="tag">v0.25</span>
+    <span class="tag">v0.26</span>
   </header>
   <main id="main"></main>
 </div>
@@ -625,6 +647,18 @@ function list(v, ctl){
 }
 
 /* ---------- Feed ---------- */
+const vkey = x => x.ytId || (((x.url || x.src || "").match(/download\/([^/]+)\//) || [])[1]) || "";
+let startClip = null;
+function shareLink(v, i){ return location.origin + location.pathname + "#watch/" + encodeURIComponent(vkey(v)) + "/" + i; }
+async function shareIt(btn, v, i, text){
+  const url = shareLink(v, i), label = btn.textContent;
+  try { if (navigator.share) { await navigator.share({title:"Middleground", text, url}); return; } } catch(e){ if (e && e.name === "AbortError") return; }
+  let ok = false;
+  try { await navigator.clipboard.writeText(url); ok = true; } catch(e){}
+  if (!ok) { try { const t = document.createElement("textarea"); t.value = url; document.body.appendChild(t); t.select(); ok = document.execCommand("copy"); t.remove(); } catch(e){} }
+  btn.textContent = ok ? "Link copied" : url;
+  setTimeout(() => { btn.textContent = label; }, 2200);
+}
 function feed(v){
   leave();
   $("#main").innerHTML = `<div class="feedwrap">
@@ -636,15 +670,38 @@ function feed(v){
     const c = document.createElement("section"); c.className = "card"; c.dataset.i = i;
     if (v.cat && CATCOL[v.cat]) c.style.setProperty("--accent", CATCOL[v.cat]);
     c.innerHTML = `<div class="col"><div class="box">${v.type === "file" ? `<video src="${v.url}" playsinline controls preload="metadata"></video>` : `<div class="slot"><img loading="lazy" alt="" src="https://i.ytimg.com/vi/${v.ytId}/hqdefault.jpg"></div>`}</div>
-      <div class="cap"><span class="src">${v.type === "file" ? "Ad-free · " : ""}${esc(v.name)} · ${fmt(m.start)}–${fmt(m.end)}${v.credit ? " · " + esc(v.credit) : ""}${m.fan ? " · viewer pick" : ""}</span><h3>${esc(m.title)}</h3><div class="bar"><span></span></div></div></div>`;
+      <div class="cap"><span class="src">${v.type === "file" ? "Ad-free · " : ""}${esc(v.name)} · ${fmt(m.start)}–${fmt(m.end)}${v.credit ? " · " + esc(v.credit) : ""}${m.fan ? " · viewer pick" : ""}</span><h3>${esc(m.title)}</h3><div class="bar"><span></span></div><button class="sharebtn" type="button">Share this clip</button></div></div>`;
     f.appendChild(c);
   });
   const reel = v.moments.reduce((a, m) => a + (m.end - m.start), 0);
-  const count = i => { $("#count").textContent = (i + 1) + " / " + v.moments.length + " · " + fmt(reel) + " of " + fmt(v.duration || 0); };
+  const count = i => {
+    $("#count").textContent = (i + 1) + " / " + v.moments.length + " · " + fmt(reel) + " of " + fmt(v.duration || 0);
+    if (v.featured) { try { history.replaceState(null, "", "#watch/" + encodeURIComponent(vkey(v)) + "/" + i); } catch(e){} }
+  };
   count(0);
 
   const isYT = v.type !== "file";
   const cards = [...f.children];
+  const shareBtns = [...f.querySelectorAll(".sharebtn")];
+  shareBtns.forEach((b, i) => { b.onclick = () => shareIt(b, v, i, v.moments[i].title + " (" + v.name + ")"); });
+  /* End card: every reel has an end. Say so, and offer what to watch next. */
+  const endEl = document.createElement("section"); endEl.className = "endcard";
+  endEl.innerHTML = `<div><span class="mark">End of reel</span><h3>That's the reel.</h3>
+    <p>${v.moments.length} moments, ${fmt(reel)} of a ${fmt(v.duration || 0)} video. Nothing left to scroll.</p>
+    <div class="row"><button class="btn primary" id="again" type="button">Watch again</button><button class="btn" id="endhome" type="button">All videos</button><button class="btn" id="endshare" type="button">Share this reel</button></div>
+    ${v.featured ? `<h2 style="margin-top:8px">Up next</h2><div class="grid" id="nextgrid"></div>` : ""}</div>`;
+  f.appendChild(endEl);
+  endEl.querySelector("#again").onclick = () => f.scrollTo({top:0, behavior:"smooth"});
+  endEl.querySelector("#endhome").onclick = () => home();
+  endEl.querySelector("#endshare").onclick = e => shareIt(e.currentTarget, v, 0, "The best moments of " + v.name);
+  if (v.featured) {
+    const me = vkey(v);
+    FEATURED.filter(x => vkey(x) !== me).sort((a, b) => (b.cat === v.cat) - (a.cat === v.cat) || (!!a.src - !!b.src)).slice(0, 3).forEach(x => {
+      const t = card(x, () => openVideo(Object.assign({}, x, {featured:true})));
+      if (x.cat && CATCOL[x.cat]) t.style.setProperty("--accent", CATCOL[x.cat]);
+      endEl.querySelector("#nextgrid").appendChild(t);
+    });
+  }
   let cur = -1, last = 0, loaded = -1, seen = false, wait = null, tick = null, auto = true, base = 100;
   /* One shared YouTube player, reused for every clip: switching clips is a seek, not a new iframe. */
   let SP = null, spReady = false, spHost = null;
@@ -681,7 +738,7 @@ function feed(v){
     try { SP.seekTo(m.start, true); SP.playVideo(); } catch(x){}   /* seek, not loadVideoById: loadVideoById with an end time won't autoplay */
   }
   function ended(i){
-    const next = cards[i + 1];
+    const next = cards[i + 1] || endEl;
     if (auto && next) { try { SP.pauseVideo(); } catch(x){} next.scrollIntoView({behavior:"smooth", block:"start"}); return; }
     play(i);
   }
@@ -715,7 +772,7 @@ function feed(v){
         box.style.opacity = f;
         if (f >= 1) base = vd.volume; else vd.volume = base * f;
         if (t >= m.end) {
-          const next = cards[i + 1];
+          const next = cards[i + 1] || endEl;
           vd.volume = base; box.style.opacity = "";
           if (auto && next) { vd.pause(); next.scrollIntoView({behavior:"smooth", block:"start"}); }
           else vd.currentTime = m.start;
@@ -757,6 +814,7 @@ function feed(v){
     else if (cur === +e.target.dataset.i) stopCur();
   }), {root:f, threshold:[.6]});
   cards.forEach(c => io.observe(c));
+  if (startClip != null) { const c = cards[Math.min(startClip, cards.length - 1)]; startClip = null; if (c) c.scrollIntoView({block:"start"}); }
   if (isYT) initPlayer();                                  /* start loading the player right away */
   else { const v0 = cards[0] && cards[0].querySelector("video"); if (v0) v0.preload = "auto"; }
   const onResize = () => place(last);
@@ -765,7 +823,14 @@ function feed(v){
 }
 
 $("#home").onclick = home;
+const bootHash = location.hash;
 home();
+(function(){   /* shared links: #watch/<video>/<clip> open straight into that clip */
+  const m = /^#watch\/([^/]+)\/(\d+)$/.exec(bootHash); if (!m) return;
+  const f = FEATURED.find(x => vkey(x) === decodeURIComponent(m[1])); if (!f) return;
+  startClip = +m[2];
+  openVideo(Object.assign({}, f, {featured:true})).catch(() => { startClip = null; });
+})();
 </script>
 </body>
 </html>
