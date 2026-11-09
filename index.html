@@ -143,7 +143,7 @@ window.ytReady = new Promise(function(res){
 <div class="app">
   <header>
     <button class="brand" id="home" aria-label="Library"><i></i>Middleground</button>
-    <span class="tag">v0.22</span>
+    <span class="tag">v0.23</span>
   </header>
   <main id="main"></main>
 </div>
@@ -645,7 +645,7 @@ function feed(v){
 
   const isYT = v.type !== "file";
   const cards = [...f.children];
-  let cur = -1, last = 0, loaded = -1, wait = null, tick = null, auto = true, base = 100;
+  let cur = -1, last = 0, loaded = -1, seen = false, wait = null, tick = null, auto = true, base = 100;
   /* One shared YouTube player, reused for every clip: switching clips is a seek, not a new iframe. */
   let SP = null, spReady = false, spHost = null;
   const place = i => {                 /* park the player over clip i's box; it lives inside the feed so it scrolls and wheel-scrolls with it */
@@ -677,12 +677,12 @@ function feed(v){
   }
   function play(i){
     if (!spReady) return;                 /* onReady will start it */
-    const m = v.moments[i]; loaded = i;
-    try { SP.loadVideoById({videoId:v.ytId, startSeconds:m.start, endSeconds:m.end}); } catch(x){}
+    const m = v.moments[i]; loaded = i; seen = false;
+    try { SP.seekTo(m.start, true); SP.playVideo(); } catch(x){}   /* seek, not loadVideoById: loadVideoById with an end time won't autoplay */
   }
   function ended(i){
     const next = cards[i + 1];
-    if (auto && next) { next.scrollIntoView({behavior:"smooth", block:"start"}); return; }
+    if (auto && next) { try { SP.pauseVideo(); } catch(x){} next.scrollIntoView({behavior:"smooth", block:"start"}); return; }
     play(i);
   }
   function stopCur(){
@@ -735,6 +735,8 @@ function feed(v){
           place(i);
           const t = SP.getCurrentTime();
           bar.style.width = Math.max(0, Math.min(100, (t - m.start) / (m.end - m.start) * 100)) + "%";
+          if (t >= m.start - 1 && t < m.end) seen = true;
+          if (seen && t >= m.end - 0.05) { seen = false; ended(i); return; }   /* end the clip ourselves */
           const fd = fadeAt(t, m);
           spHost.style.opacity = fd;
           if (fd >= 1) base = SP.getVolume(); else SP.setVolume(base * fd);
