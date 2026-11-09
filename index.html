@@ -74,6 +74,11 @@ button.tile:hover{border-color:var(--fg)}
 .tab:hover{color:var(--fg)}
 .tab.on{color:var(--fg);border-bottom-color:var(--fg)}
 .rowhead{display:flex;align-items:baseline;justify-content:space-between;gap:12px;border-bottom:1px solid var(--line);padding-bottom:8px}
+.rowhead h3{margin:0;font:600 12px/1.4 var(--sans);letter-spacing:.12em;text-transform:uppercase}
+.grouphead{display:grid;gap:6px;padding-top:8px}
+.grouphead h2{font:600 clamp(28px,5vw,40px)/1.1 var(--display);letter-spacing:-.015em;text-transform:none}
+.grouphead p{margin:0;color:var(--muted,#9a9a9a);font-size:15px}
+#rows>div+div{margin-top:24px;padding-top:32px;border-top:1px solid var(--line)}
 .shelf{display:flex;gap:16px;overflow-x:auto;scroll-snap-type:x proximity;padding-bottom:10px;scrollbar-width:thin;scrollbar-color:var(--line) transparent}
 .shelf .tile{flex:0 0 min(260px,74vw);scroll-snap-align:start}
 .note{font-size:13px;color:var(--muted);max-width:70ch}
@@ -126,7 +131,7 @@ window.ytReady = new Promise(function(res){
 <div class="app">
   <header>
     <button class="brand" id="home" aria-label="Library"><i></i>Middleground</button>
-    <span class="tag">v0.14</span>
+    <span class="tag">v0.15</span>
   </header>
   <main id="main"></main>
 </div>
@@ -350,6 +355,12 @@ const FEATURED = [
   {src:"https://archive.org/download/LetsGoBo1955/LetsGoBo1955.mp4", thumb:"https://archive.org/services/img/LetsGoBo1955", name:"Let's Go Bowling (1955)", credit:"Prelinger Archives · Public domain", duration:853, cat:"Sports", moments:[[9,29,"Let's go bowling"],[177,199,"At the shop counter"],[345,367,"At the lanes with friends"],[401,423,"Lining up on the lane"],[457,479,"Keeping score at the table"],[569,591,"The ball up close"],[681,703,"A lesson at the lane"],[793,815,"The delivery"]]},
   {src:"https://archive.org/download/hindenberg_explodes/hindenberg_explodes.mp4", thumb:"https://archive.org/services/img/hindenberg_explodes", name:"Hindenburg Explodes (1937 newsreel)", credit:"Prelinger Archives · Public domain", duration:327, cat:"News", moments:[[25,45,"The Hindenburg in flight"],[46,66,"Over the New York skyline"],[191,211,"Dusk: nearing the mooring mast"],[213,233,"The fire erupts"],[234,254,"The ship burns"],[255,275,"Rescuers rush in"],[276,296,"Smoke over the field"],[297,317,"Dawn: all that remains"]]},
   {src:"https://archive.org/download/NASA_360_12_HD/NASA_360_12_HD_512kb.mp4", thumb:"https://archive.org/services/img/NASA_360_12_HD", name:"NASA 360: NASA in Your Home", credit:"NASA · Public domain", duration:1472, cat:"Tech & Science", moments:[[19,41,"NASA 360: NASA in your home"],[163,185,"Space electronics up close"],[235,257,"A launch at night"],[307,329,"NASA technology in the kitchen"],[595,617,"Food safety systems"],[739,761,"Baby formula nutrients: DHA and ARA"],[1171,1193,"On location with the host"]]},
+  /* Popular: YouTube videos (play in YouTube's player, so the creator's ads can show) */
+  {ytId:"_c2e1NcI3Sc", cat:"Entertainment", moments:[[0,25,"The bet: beat the world's best athletes for $100,000"],[210,238,"A random subscriber has $100,000 on the line"],[290,315,"Thea goes for 77 spins"],[895,920,"Gordon takes his first-ever loss"],[1210,1235,"Simone Biles: almost there"],[1315,1339,"The LeBron finish: won by one"]]},
+  {ytId:"lKCTJp3PQX0", cat:"Educational", moments:[[0,30,"Intro: Ancient Rome in 25 minutes"],[71,101,"The advanced aqueduct system"],[274,304,"Baths of Caracalla"],[572,602,"Circus Maximus"],[734,764,"The Roman Forum"],[903,933,"The Colosseum"],[1257,1287,"The Pantheon"]]},
+  {ytId:"6VTSAs4Rsck", cat:"Business", moments:[[135,170,"Why being adaptable matters"],[513,548,"Biggest mistakes young entrepreneurs make"],[676,711,"What all millionaires have in common"],[1127,1162,"Hate your job but have little savings?"],[1509,1544,"AI: opportunity or threat?"],[1877,1912,"Are we in a bubble?"],[3094,3129,"Is AI sending us into debt?"],[4332,4367,"Should everyone be an entrepreneur?"]]},
+  {ytId:"4PDLO-iC3FM", cat:"Outdoors", moments:[[0,30,"Alaska, winter, no sleeping bag"],[129,159,"Checking the ground temperature"],[273,303,"Fire starters"],[598,618,"Sleeping on the bare ground"],[620,650,"Soaking wet"],[766,796,"A cold night"],[1149,1179,"Stove installed"],[1427,1457,"Temperature check"]]},
+  {ytId:"OYZBoXz6pkI", cat:"Sports", moments:[[0,30,"The final journey: Miami vs. Oklahoma City"],[39,69,"Game one build-up"],[133,163,"Game one intensity"],[354,384,"Preparing for game two"],[499,529,"Game two showdown"],[767,797,"The series shifts to Miami"],[866,896,"Game three battle"],[1204,1234,"Game four pressure"],[1534,1564,"Final preparations"],[1645,1685,"Miami wins the championship"]]},
 ];
 /* Add  cat:"Sports"  (or "TV & Film", "News", "Educational", "Business", "Tech & Science", "Comedy", "Entertainment", "Gaming", "Music") to place a video in a row.
    Without cat, the row is picked from the video's YouTube category when an API key is set, otherwise it goes under "Featured".
@@ -395,17 +406,27 @@ const YT_CATS = {"17":"Sports", "1":"TV & Film", "25":"News", "27":"Educational"
 function renderRows(){
   const host = $("#rows"); if (!host) return;
   host.innerHTML = "";
-  const groups = {};
-  FEATURED.forEach(f => { const c = ROW_ORDER.includes(f.cat) ? f.cat : "Featured"; (groups[c] = groups[c] || []).push(f); });
-  ROW_ORDER.filter(c => groups[c]).forEach(c => {
-    const sec = document.createElement("section"); sec.style.cssText = "display:grid;gap:12px";
-    sec.innerHTML = `<div class="rowhead"><h2>${esc(c)}</h2><span class="meta">${groups[c].length}</span></div><div class="shelf"></div>`;
-    groups[c].forEach(f => {
-      const t = card(f, () => pick(Object.assign({}, f, {featured:true})));
-      sec.querySelector(".shelf").appendChild(t);
-      if (!f.name) fillTitle(f, t);
+  const parts = [
+    {title:"Ad-free", note:"Public-domain and government video. Plays in our own player with no ads.", list:FEATURED.filter(f => f.src)},
+    {title:"Popular", note:"Popular YouTube videos. These play in YouTube's player, so the creator's ads can show.", list:FEATURED.filter(f => !f.src)}
+  ];
+  parts.forEach(part => {
+    if (!part.list.length) return;
+    const wrap = document.createElement("div"); wrap.style.cssText = "display:grid;gap:24px";
+    wrap.innerHTML = `<div class="grouphead"><h2>${esc(part.title)}</h2><p>${esc(part.note)}</p></div>`;
+    const groups = {};
+    part.list.forEach(f => { const c = ROW_ORDER.includes(f.cat) ? f.cat : "Featured"; (groups[c] = groups[c] || []).push(f); });
+    ROW_ORDER.filter(c => groups[c]).forEach(c => {
+      const sec = document.createElement("section"); sec.style.cssText = "display:grid;gap:12px";
+      sec.innerHTML = `<div class="rowhead"><h3>${esc(c)}</h3><span class="meta">${groups[c].length}</span></div><div class="shelf"></div>`;
+      groups[c].forEach(f => {
+        const t = card(f, () => pick(Object.assign({}, f, {featured:true})));
+        sec.querySelector(".shelf").appendChild(t);
+        if (!f.name) fillTitle(f, t);
+      });
+      wrap.appendChild(sec);
     });
-    host.appendChild(sec);
+    host.appendChild(wrap);
   });
 }
 async function autoCategorize(){
@@ -435,7 +456,7 @@ function home(){
       <button class="tab" role="tab" id="tab-sug" aria-controls="p-sug">Suggested</button>
       <button class="tab" role="tab" id="tab-diy" aria-controls="p-diy">Build your own</button>
     </div>
-    <div id="p-sug" role="tabpanel" aria-labelledby="tab-sug" style="display:grid;gap:12px"><p>Ad-free picks: public-domain and government video, cut to its key moments.</p><div id="rows" style="display:grid;gap:32px"></div></div>
+    <div id="p-sug" role="tabpanel" aria-labelledby="tab-sug" style="display:grid;gap:12px"><p>Pick a video and scroll through its key moments.</p><div id="rows" style="display:grid;gap:32px"></div></div>
     <div id="p-diy" role="tabpanel" aria-labelledby="tab-diy" style="display:grid;gap:24px">
     <section style="display:grid;gap:12px"><h2>Make a highlight reel</h2><p>Paste a YouTube link. Get a short reel of the key moments.</p>
       <form class="urlform" id="addForm">
@@ -449,7 +470,7 @@ function home(){
         <span>${hasKey ? "A key is saved in this browser." : "Optional. With a key, reels use the timestamps people write in comments. Without one, videos are cut into even 30-second clips."}</span>
         <form class="urlform" id="keyForm"><input id="key" type="text" autocomplete="off" placeholder="API key" aria-label="API key"><button class="btn" type="submit">${hasKey ? "Replace key" : "Save key"}</button>${hasKey ? `<button class="btn danger" id="clearKey" type="button">Remove key</button>` : ""}</form>
       </div></details></div>
-    <p class="note">Suggested videos are public-domain files and play with no ads. Reels you build from YouTube links play in YouTube's own player: views and ads still go to the creator, and some creators turn off embedding.</p>
+    <p class="note">Ad-free videos are public-domain files that play with no ads. Popular videos and reels you build from YouTube links play in YouTube's own player: views and ads still go to the creator, and some creators turn off embedding.</p>
   </div>`;
 
   ["sug", "diy"].forEach(k => {
