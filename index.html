@@ -96,6 +96,23 @@ button.tile:hover{border-color:var(--fg)}
 .cap h3{margin:0;font:600 clamp(20px,4vw,28px)/1.15 var(--display);letter-spacing:-.015em;color:var(--ink-fg);overflow-wrap:anywhere}
 .bar{height:3px;background:var(--ink-line)}
 .bar span{display:block;height:100%;width:0;background:var(--ink-fg)}
+.card .col{opacity:.3;transition:opacity .3s ease}
+.card.on .col{opacity:1}
+/* Build your own: larger */
+#p-diy>section:first-child{border:1px solid var(--line);padding:clamp(20px,4vw,40px);gap:20px!important}
+#p-diy>section:first-child h2{font:600 clamp(26px,4.5vw,38px)/1.15 var(--display);letter-spacing:-.015em;text-transform:none}
+#p-diy>section:first-child p{font-size:clamp(16px,2vw,19px);max-width:56ch}
+#addForm{gap:12px}
+#addForm input{flex:1 1 420px;padding:20px 22px;font-size:clamp(16px,2vw,20px)}
+#addForm .btn{padding:20px 36px;font-size:17px}
+#p-diy #msg{font-size:16px;min-height:0}
+#p-diy #msg:empty{display:none}
+/* Editor: wider, bigger player */
+.wrap.wide{max-width:1160px}
+.wrap.wide .editor{grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:32px}
+@media (max-width:760px){.wrap.wide .editor{grid-template-columns:1fr}}
+.wrap.wide .btn{padding:11px 20px}
+.pill.on{background:var(--ink-fg);color:var(--ink)}
 </style>
 <script>
 /* Set up the promise BEFORE the YouTube script loads */
@@ -109,7 +126,7 @@ window.ytReady = new Promise(function(res){
 <div class="app">
   <header>
     <button class="brand" id="home" aria-label="Library"><i></i>Middleground</button>
-    <span class="tag">v0.11</span>
+    <span class="tag">v0.13</span>
   </header>
   <main id="main"></main>
 </div>
@@ -303,6 +320,11 @@ async function buildMoments(v, strict){
   return false;
 }
 async function openVideo(meta){
+  if (meta.src) {   /* free-to-reuse file hosted by its archive: plain video, no player ads */
+    const v = {type:"file", id:"src:" + meta.src, url:meta.src, name:meta.name, duration:meta.duration, credit:meta.credit, featured:true,
+      moments:(meta.moments || []).map(([s, e, t]) => ({start:s, end:Math.min(e, meta.duration), title:t || "Highlight"}))};
+    return feed(v);
+  }
   let v = videos.find(x => x.ytId === meta.ytId);
   if (!v) {
     let duration = meta.duration, name = meta.name;
@@ -319,13 +341,17 @@ async function openVideo(meta){
 /* ---------- Featured videos: EDIT THIS LIST ----------
    Each entry: ytId (the part after v= in the link), name, channel (optional).
    moments is optional: [startSeconds, endSeconds, "title"]. Leave it out to find highlights automatically.
-   The two entries below are examples. Replace them with your own picks. */
+   Hand-picked moments for each featured video. Replace or add entries with your own picks. */
 const FEATURED = [
   {ytId:"_c2e1NcI3Sc", cat:"Entertainment", moments:[[0,25,"The bet: beat the world's best athletes for $100,000"],[210,238,"A random subscriber has $100,000 on the line"],[290,315,"Thea goes for 77 spins"],[895,920,"Gordon takes his first-ever loss"],[1210,1235,"Simone Biles: almost there"],[1315,1339,"The LeBron finish: won by one"]]},
   {ytId:"lKCTJp3PQX0", cat:"Educational", moments:[[0,30,"Intro: Ancient Rome in 25 minutes"],[71,101,"The advanced aqueduct system"],[274,304,"Baths of Caracalla"],[572,602,"Circus Maximus"],[734,764,"The Roman Forum"],[903,933,"The Colosseum"],[1257,1287,"The Pantheon"]]},
   {ytId:"6VTSAs4Rsck", cat:"Business", moments:[[135,170,"Why being adaptable matters"],[513,548,"Biggest mistakes young entrepreneurs make"],[676,711,"What all millionaires have in common"],[1127,1162,"Hate your job but have little savings?"],[1509,1544,"AI: opportunity or threat?"],[1877,1912,"Are we in a bubble?"],[3094,3129,"Is AI sending us into debt?"],[4332,4367,"Should everyone be an entrepreneur?"]]},
   {ytId:"4PDLO-iC3FM", cat:"Entertainment", moments:[[0,30,"Alaska, winter, no sleeping bag"],[129,159,"Checking the ground temperature"],[273,303,"Fire starters"],[598,618,"Sleeping on the bare ground"],[620,650,"Soaking wet"],[766,796,"A cold night"],[1149,1179,"Stove installed"],[1427,1457,"Temperature check"]]},
-    {ytId:"OYZBoXz6pkI", cat:"Sports", moments:[[0,30,"The final journey: Miami vs. Oklahoma City"],[39,69,"Game one build-up"],[133,163,"Game one intensity"],[354,384,"Preparing for game two"],[499,529,"Game two showdown"],[767,797,"The series shifts to Miami"],[866,896,"Game three battle"],[1204,1234,"Game four pressure"],[1534,1564,"Final preparations"],[1645,1685,"Miami wins the championship"]]},
+  {ytId:"OYZBoXz6pkI", cat:"Sports", moments:[[0,30,"The final journey: Miami vs. Oklahoma City"],[39,69,"Game one build-up"],[133,163,"Game one intensity"],[354,384,"Preparing for game two"],[499,529,"Game two showdown"],[767,797,"The series shifts to Miami"],[866,896,"Game three battle"],[1204,1234,"Game four pressure"],[1534,1564,"Final preparations"],[1645,1685,"Miami wins the championship"]]},
+  {src:"https://archive.org/download/NASA_360_program3_HD/NASA_360_program3_HD_512kb.mp4", thumb:"https://archive.org/services/img/NASA_360_program3_HD", name:"NASA 360, Episode 3: Safer Racing", credit:"NASA · Public domain", duration:1472, cat:"Tech & Science", moments:[[150,180,"NASA can't rely on computer simulations alone"],[292,322,"Space technology on the race track"],[728,758,"Seat design to minimize risk"],[870,900,"Is it good enough? Testing inflatable habitats"],[1160,1190,"Inflatable structures for space"],[1230,1260,"Protecting the driver: Penske Racing"]]},
+  {src:"https://archive.org/download/AlaskaAM1948/AlaskaAM1948.mp4", thumb:"https://archive.org/services/img/AlaskaAM1948", name:"Alaska: A Modern Frontier (1948)", credit:"Coronet Films · Public domain", duration:619, cat:"Outdoors", moments:[[42,67,"Wild rivers"],[88,113,"Forest from the air"],[133,158,"Life on the frontier"],[178,203,"The open road"],[268,293,"Alaska on the globe"],[358,383,"A frontier town from above"],[403,428,"Farming in the north"],[448,473,"Mountains from the air"],[493,518,"A coastal village"]]},
+  {src:"https://archive.org/download/WhatIsMo1947/WhatIsMo1947.mp4", thumb:"https://archive.org/services/img/WhatIsMo1947", name:"What Is Money? (1947)", credit:"Coronet Films · Public domain", duration:633, cat:"Business", moments:[[47,72,"A shopkeeper takes a payment"],[92,117,"Paying at the meat shop"],[182,207,"Handing over the bill"],[272,297,"Know your money: real bills compared"],[317,342,"Examining a five-dollar bill"],[362,387,"The cash register"],[407,432,"A customer at the counter"],[452,477,"Counting the till"],[587,612,"Checking a bill by hand"]]},
+  {src:"https://archive.org/download/ClassicT1948/ClassicT1948.mp4", thumb:"https://archive.org/services/img/ClassicT1948", name:"Classic Television Commercials, Part 1", credit:"Prelinger Archives · Public domain", duration:537, cat:"Entertainment", moments:[[0,25,"Classic ad: the egg"],[36,61,"Classic ad: the bandage"],[145,170,"Gillette Blue Blades"],[215,240,"Brooklyn Dodgers players pitch a product"],[322,347,"Mum deodorant"],[432,457,"Inside a 1950s car factory"],[470,495,"The assembly line"],[505,530,"A new Dodge rolls off the line"]]},
 ];
 /* Add  cat:"Sports"  (or "TV & Film", "News", "Educational", "Business", "Tech & Science", "Comedy", "Entertainment", "Gaming", "Music") to place a video in a row.
    Without cat, the row is picked from the video's YouTube category when an API key is set, otherwise it goes under "Featured".
@@ -340,8 +366,8 @@ function card(m, onClick){
   const b = document.createElement("button"); b.className = "tile";
   const reel = (m.moments || []).reduce((a, x) => a + (x.end - x.start), 0);
   const len = reel && m.duration ? "Reel " + fmt(reel) + " of " + fmt(m.duration) : (m.duration ? fmt(m.duration) : "");
-  const sub = [m.channel ? esc(m.channel) : "", len].filter(Boolean).join(" · ");
-  b.innerHTML = `<div class="thumb"><img loading="lazy" src="https://i.ytimg.com/vi/${m.ytId}/mqdefault.jpg" alt=""></div>
+  const sub = [m.credit ? esc(m.credit) : (m.channel ? esc(m.channel) : ""), len].filter(Boolean).join(" · ");
+  b.innerHTML = `<div class="thumb"><img loading="lazy" src="${m.thumb ? esc(m.thumb) : "https://i.ytimg.com/vi/" + m.ytId + "/mqdefault.jpg"}" alt=""></div>
     <b>${esc(m.name || "Loading title…")}</b>${sub ? `<span class="meta">${sub}</span>` : ""}`;
   b.onclick = onClick;
   return b;
@@ -366,7 +392,7 @@ function showTab(t){
   });
   try { history.replaceState(null, "", t === "diy" ? "#build" : "#suggested"); } catch(e){}
 }
-const ROW_ORDER = ["Sports", "TV & Film", "News", "Educational", "Business", "Tech & Science", "Comedy", "Entertainment", "Gaming", "Music", "Featured"];
+const ROW_ORDER = ["Sports", "TV & Film", "News", "Educational", "Business", "Tech & Science", "Outdoors", "Comedy", "Entertainment", "Gaming", "Music", "Featured"];
 const YT_CATS = {"17":"Sports", "1":"TV & Film", "25":"News", "27":"Educational", "28":"Tech & Science", "23":"Comedy", "24":"Entertainment", "20":"Gaming", "10":"Music"};
 function renderRows(){
   const host = $("#rows"); if (!host) return;
@@ -478,7 +504,7 @@ function home(){
 /* ---------- Moments editor ---------- */
 function edit(v){
   leave();
-  $("#main").innerHTML = `<div class="wrap">
+  $("#main").innerHTML = `<div class="wrap wide">
     <div class="row" style="justify-content:space-between"><h1>${esc(v.name)}</h1>
       <button class="btn primary" id="go">Open feed</button></div>
     <div class="editor">
@@ -567,75 +593,119 @@ function list(v, ctl){
 function feed(v){
   leave();
   $("#main").innerHTML = `<div class="feedwrap">
-    <div class="feedtop"><button class="pill" id="back">← Clips</button><span class="pill meta" id="count"></span></div>
+    <div class="feedtop"><button class="pill" id="back">← Clips</button>${`<button class="pill on" id="auto" aria-pressed="true" title="Move to the next clip when one ends">Auto-advance: on</button>`}<span class="pill meta" id="count"></span></div>
     <div class="feed" id="feed"></div></div>`;
   $("#back").onclick = () => edit(v);
   const f = $("#feed");
   v.moments.forEach((m, i) => {
     const c = document.createElement("section"); c.className = "card"; c.dataset.i = i;
     c.innerHTML = `<div class="col"><div class="box">${v.type === "file" ? `<video src="${v.url}" playsinline controls preload="metadata"></video>` : `<div class="slot"></div>`}</div>
-      <div class="cap"><span class="src">${esc(v.name)} · ${fmt(m.start)}–${fmt(m.end)}${m.fan ? " · viewer pick" : ""}</span><h3>${esc(m.title)}</h3><div class="bar"><span></span></div></div></div>`;
+      <div class="cap"><span class="src">${esc(v.name)} · ${fmt(m.start)}–${fmt(m.end)}${v.credit ? " · " + esc(v.credit) : ""}${m.fan ? " · viewer pick" : ""}</span><h3>${esc(m.title)}</h3><div class="bar"><span></span></div></div></div>`;
     f.appendChild(c);
   });
   const reel = v.moments.reduce((a, m) => a + (m.end - m.start), 0);
   const count = i => { $("#count").textContent = (i + 1) + " / " + v.moments.length + " · " + fmt(reel) + " of " + fmt(v.duration || 0); };
   count(0);
 
-  let act = null;
-  const deactivate = () => { if (act) { act.stop(); act = null; } };
+  const isYT = v.type !== "file";
+  const cards = [...f.children];
+  const pool = {};              /* clip index -> {p, ready, bad}: a rolling window of players, current +/- 1 */
+  let cur = -1, wait = null, warm = null, tick = null, auto = true;
 
+  const destroyAt = k => {
+    const e = pool[k]; if (!e) return;
+    delete pool[k];
+    try { e.p && e.p.destroy(); } catch(x){}
+    const s = cards[k] && cards[k].querySelector(".slot"); if (s) s.innerHTML = "";
+  };
+  function build(i){
+    if (!isYT || i < 0 || i >= v.moments.length || pool[i]) return;
+    const m = v.moments[i], slot = cards[i].querySelector(".slot");
+    const e = pool[i] = {p:null, ready:false, bad:false};
+    const fail = msg => { e.bad = true; slot.innerHTML = `<div class="empty" style="margin:16px">${esc(msg)}</div>`; };
+    loadYT().then(() => {
+      if (pool[i] !== e) return;
+      slot.innerHTML = "<div></div>";
+      e.p = new YT.Player(slot.firstChild, {width:"100%", height:"100%", videoId:v.ytId,
+        playerVars:{playsinline:1, rel:0, modestbranding:1, iv_load_policy:3, start:Math.floor(m.start), end:Math.ceil(m.end)},
+        events:{
+          onReady: () => { e.ready = true; if (cur === i) play(i); },
+          onStateChange: ev => { if (cur === i && ev.data === YT.PlayerState.ENDED) ended(i); },
+          onError: ev => fail(errMsg(ev.data))
+        }});
+    }).catch(fail);
+  }
+  function play(i){
+    const e = pool[i], m = v.moments[i];
+    if (!e || !e.ready) return;           /* onReady will start it */
+    try { e.p.seekTo(m.start, true); e.p.playVideo(); } catch(x){}
+  }
+  function ended(i){
+    const m = v.moments[i], e = pool[i], next = cards[i + 1];
+    if (auto && next) { next.scrollIntoView({behavior:"smooth", block:"start"}); return; }
+    try { e.p.loadVideoById({videoId:v.ytId, startSeconds:m.start, endSeconds:m.end}); } catch(x){}
+  }
+  function stopCur(){
+    clearTimeout(wait); clearTimeout(warm); clearInterval(tick);
+    if (cur >= 0) {
+      cards[cur].classList.remove("on");
+      const e = pool[cur]; if (e && e.ready) { try { e.p.pauseVideo(); } catch(x){} }
+      const vd = cards[cur].querySelector("video"); if (vd) { vd.pause(); vd.ontimeupdate = null; }
+    }
+    cur = -1;
+  }
   function activate(card){
-    if (act && act.card === card) return;
-    deactivate();
-    const m = v.moments[+card.dataset.i];
-    const bar = card.querySelector(".bar span");
+    const i = +card.dataset.i;
+    if (cur === i) return;
+    stopCur();
+    cur = i; card.classList.add("on");
+    const m = v.moments[i], bar = card.querySelector(".bar span");
     bar.style.width = "0";
-    if (v.type === "file") {
+    if (!isYT) {
       const vd = card.querySelector("video");
       vd.currentTime = m.start; vd.play().catch(() => {});
       vd.ontimeupdate = () => {
         bar.style.width = Math.min(100, (vd.currentTime - m.start) / (m.end - m.start) * 100) + "%";
-        if (vd.currentTime >= m.end) vd.currentTime = m.start;
+        if (vd.currentTime >= m.end) {
+          const next = cards[i + 1];
+          if (auto && next) { vd.pause(); next.scrollIntoView({behavior:"smooth", block:"start"}); }
+          else vd.currentTime = m.start;
+        }
       };
-      act = {card, stop(){ vd.pause(); vd.ontimeupdate = null; }};
+      const nx = cards[i + 1] && cards[i + 1].querySelector("video"); if (nx) nx.preload = "auto";
       return;
     }
-    /* YouTube: wait a moment so fast scrolling doesn't spawn a player per card */
-    const slot = card.querySelector(".slot");
-    let p, timer, alive = true;
-    const wait = setTimeout(() => {
-      loadYT().then(() => {
-        if (!alive) return;
-        slot.innerHTML = "<div></div>";
-        p = new YT.Player(slot.firstChild, {width:"100%", height:"100%", videoId:v.ytId,
-          playerVars:{autoplay:1, playsinline:1, rel:0, start:Math.floor(m.start), end:Math.ceil(m.end)},
-          events:{
-            onStateChange: e => {
-              if (e.data === YT.PlayerState.ENDED) p.loadVideoById({videoId:v.ytId, startSeconds:m.start, endSeconds:m.end});
-            },
-            onError: e => { slot.innerHTML = `<div class="empty" style="margin:16px">${esc(errMsg(e.data))}</div>`; }
-          }});
-        timer = setInterval(() => {
-          try {
-            const t = p.getCurrentTime();
-            bar.style.width = Math.max(0, Math.min(100, (t - m.start) / (m.end - m.start) * 100)) + "%";
-          } catch(e){}
-        }, 200);
-      }).catch(msg => { slot.innerHTML = `<div class="empty" style="margin:16px">${esc(msg)}</div>`; });
-    }, 250);
-    act = {card, stop(){
-      alive = false; clearTimeout(wait); clearInterval(timer);
-      try { p && p.destroy(); } catch(e){}
-      slot.innerHTML = "";
-    }};
+    /* Short wait so fast scrolling doesn't spin up a player per card; a neighbour that was
+       already warmed up starts instantly. */
+    const go = () => {
+      if (cur !== i) return;
+      build(i); play(i);
+      tick = setInterval(() => {
+        const e = pool[i]; if (!e || !e.ready) return;
+        try { bar.style.width = Math.max(0, Math.min(100, (e.p.getCurrentTime() - m.start) / (m.end - m.start) * 100)) + "%"; } catch(x){}
+      }, 200);
+      warm = setTimeout(() => {          /* then preload the clips on either side and drop the rest */
+        if (cur !== i) return;
+        build(i + 1); build(i - 1);
+        Object.keys(pool).forEach(k => { if (Math.abs(+k - i) > 1) destroyAt(k); });
+      }, 900);
+    };
+    if (pool[i] && pool[i].ready) go(); else wait = setTimeout(go, 250);
   }
+
+  const autoBtn = $("#auto");
+  if (autoBtn) autoBtn.onclick = () => {
+    auto = !auto;
+    autoBtn.textContent = "Auto-advance: " + (auto ? "on" : "off");
+    autoBtn.classList.toggle("on", auto); autoBtn.setAttribute("aria-pressed", String(auto));
+  };
 
   const io = new IntersectionObserver(es => es.forEach(e => {
     if (e.isIntersecting) { count(+e.target.dataset.i); activate(e.target); }
-    else if (act && act.card === e.target) deactivate();
+    else if (cur === +e.target.dataset.i) stopCur();
   }), {root:f, threshold:[.6]});
-  f.querySelectorAll(".card").forEach(c => io.observe(c));
-  cleanup.push(() => { deactivate(); io.disconnect(); });
+  cards.forEach(c => io.observe(c));
+  cleanup.push(() => { stopCur(); Object.keys(pool).forEach(destroyAt); io.disconnect(); });
 }
 
 $("#home").onclick = home;
