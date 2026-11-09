@@ -93,7 +93,9 @@ button.tile:hover{border-color:var(--fg)}
 .card{height:100%;scroll-snap-align:start;scroll-snap-stop:always;display:flex;flex-direction:column;justify-content:center;
   padding:56px max(16px,env(safe-area-inset-right,0px)) calc(16px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
 .col{width:100%;max-width:max(280px,min(960px,calc((100dvh - 240px) * 1.778)));margin:0 auto;display:grid;gap:14px}
-.box{aspect-ratio:16/9;background:#111;overflow:hidden}
+.box{aspect-ratio:16/9;background:#111;overflow:hidden;position:relative}
+.slot{position:absolute;inset:0}
+.slot>iframe,.slot>div{width:100%;height:100%}
 .box iframe,.box video{width:100%;height:100%;border:0;display:block;object-fit:contain}
 .box .empty{color:var(--ink-muted);border-color:var(--ink-line)}
 .cap{display:grid;gap:6px}
@@ -131,7 +133,7 @@ window.ytReady = new Promise(function(res){
 <div class="app">
   <header>
     <button class="brand" id="home" aria-label="Library"><i></i>Middleground</button>
-    <span class="tag">v0.15</span>
+    <span class="tag">v0.16</span>
   </header>
   <main id="main"></main>
 </div>
@@ -668,11 +670,14 @@ function feed(v){
     clearTimeout(wait); clearTimeout(warm); clearInterval(tick);
     if (cur >= 0) {
       cards[cur].classList.remove("on");
-      const e = pool[cur]; if (e && e.ready) { try { e.p.pauseVideo(); } catch(x){} }
+      const e = pool[cur]; if (e && e.ready) { try { e.p.pauseVideo(); if (e.base) e.p.setVolume(e.base); } catch(x){} }
       const vd = cards[cur].querySelector("video"); if (vd) { vd.pause(); vd.ontimeupdate = null; }
+      const bx = cards[cur].querySelector(".box"); if (bx) bx.style.opacity = "";
     }
     cur = -1;
   }
+  /* 1 in the middle of a clip, easing to 0 over the first 0.5s and last 0.7s */
+  const fadeAt = (t, m) => Math.max(0, Math.min(1, (t - m.start) / 0.5 + 0.15, (m.end - t) / 0.7));
   function activate(card){
     const i = +card.dataset.i;
     if (cur === i) return;
@@ -681,16 +686,22 @@ function feed(v){
     const m = v.moments[i], bar = card.querySelector(".bar span");
     bar.style.width = "0";
     if (!isYT) {
-      const vd = card.querySelector("video");
+      const vd = card.querySelector("video"), box = card.querySelector(".box");
+      let base = vd.volume;
       vd.currentTime = m.start; vd.play().catch(() => {});
-      vd.ontimeupdate = () => {
-        bar.style.width = Math.min(100, (vd.currentTime - m.start) / (m.end - m.start) * 100) + "%";
-        if (vd.currentTime >= m.end) {
+      tick = setInterval(() => {      /* soft fade in/out so a clip never ends on a hard cut */
+        const t = vd.currentTime;
+        bar.style.width = Math.max(0, Math.min(100, (t - m.start) / (m.end - m.start) * 100)) + "%";
+        const f = fadeAt(t, m);
+        box.style.opacity = f;
+        if (f >= 1) base = vd.volume; else vd.volume = base * f;
+        if (t >= m.end) {
           const next = cards[i + 1];
+          vd.volume = base; box.style.opacity = "";
           if (auto && next) { vd.pause(); next.scrollIntoView({behavior:"smooth", block:"start"}); }
           else vd.currentTime = m.start;
         }
-      };
+      }, 60);
       const nx = cards[i + 1] && cards[i + 1].querySelector("video"); if (nx) nx.preload = "auto";
       return;
     }
@@ -699,10 +710,18 @@ function feed(v){
     const go = () => {
       if (cur !== i) return;
       build(i); play(i);
+      const box = card.querySelector(".box"); let base = 100;
       tick = setInterval(() => {
         const e = pool[i]; if (!e || !e.ready) return;
-        try { bar.style.width = Math.max(0, Math.min(100, (e.p.getCurrentTime() - m.start) / (m.end - m.start) * 100)) + "%"; } catch(x){}
-      }, 200);
+        try {
+          const t = e.p.getCurrentTime();
+          bar.style.width = Math.max(0, Math.min(100, (t - m.start) / (m.end - m.start) * 100)) + "%";
+          const f = fadeAt(t, m);
+          box.style.opacity = f;
+          if (f >= 1) base = e.p.getVolume(); else e.p.setVolume(base * f);
+          e.base = base;
+        } catch(x){}
+      }, 100);
       warm = setTimeout(() => {          /* then preload the clips on either side and drop the rest */
         if (cur !== i) return;
         build(i + 1); build(i - 1);
