@@ -91,7 +91,10 @@ button.tile:hover{border-color:var(--fg);border-top-color:var(--accent,var(--fg)
 .note summary{cursor:pointer}
 /* Feed */
 .feedwrap{position:absolute;inset:0;background:var(--ink);color:var(--ink-fg)}
-.feed{height:100%;overflow-y:auto;scroll-snap-type:y mandatory}
+.feed{height:100%;overflow-y:auto;scroll-snap-type:y mandatory;position:relative}
+.sp{position:absolute;z-index:1;background:#000;pointer-events:auto}
+.sp>div,.sp iframe{width:100%;height:100%;display:block}
+.slot img{width:100%;height:100%;object-fit:cover;opacity:.5;display:block}
 .feedtop{position:absolute;top:12px;left:max(12px,env(safe-area-inset-left,0px));right:max(12px,env(safe-area-inset-right,0px));display:flex;justify-content:space-between;gap:8px;z-index:3;pointer-events:none}
 .feedtop>*{pointer-events:auto}
 .pill{background:var(--ink);border:1px solid var(--ink-fg);color:var(--ink-fg);border-radius:0;padding:6px 12px;font-weight:600}
@@ -140,7 +143,7 @@ window.ytReady = new Promise(function(res){
 <div class="app">
   <header>
     <button class="brand" id="home" aria-label="Library"><i></i>Middleground</button>
-    <span class="tag">v0.21</span>
+    <span class="tag">v0.22</span>
   </header>
   <main id="main"></main>
 </div>
@@ -632,7 +635,7 @@ function feed(v){
   v.moments.forEach((m, i) => {
     const c = document.createElement("section"); c.className = "card"; c.dataset.i = i;
     if (v.cat && CATCOL[v.cat]) c.style.setProperty("--accent", CATCOL[v.cat]);
-    c.innerHTML = `<div class="col"><div class="box">${v.type === "file" ? `<video src="${v.url}" playsinline controls preload="metadata"></video>` : `<div class="slot"></div>`}</div>
+    c.innerHTML = `<div class="col"><div class="box">${v.type === "file" ? `<video src="${v.url}" playsinline controls preload="metadata"></video>` : `<div class="slot"><img loading="lazy" alt="" src="https://i.ytimg.com/vi/${v.ytId}/hqdefault.jpg"></div>`}</div>
       <div class="cap"><span class="src">${v.type === "file" ? "Ad-free · " : ""}${esc(v.name)} · ${fmt(m.start)}–${fmt(m.end)}${v.credit ? " · " + esc(v.credit) : ""}${m.fan ? " · viewer pick" : ""}</span><h3>${esc(m.title)}</h3><div class="bar"><span></span></div></div></div>`;
     f.appendChild(c);
   });
@@ -642,51 +645,55 @@ function feed(v){
 
   const isYT = v.type !== "file";
   const cards = [...f.children];
-  const pool = {};              /* clip index -> {p, ready, bad}: a rolling window of players, current +/- 1 */
-  let cur = -1, wait = null, warm = null, tick = null, auto = true;
-
-  const destroyAt = k => {
-    const e = pool[k]; if (!e) return;
-    delete pool[k];
-    try { e.p && e.p.destroy(); } catch(x){}
-    const s = cards[k] && cards[k].querySelector(".slot"); if (s) s.innerHTML = "";
+  let cur = -1, last = 0, loaded = -1, wait = null, tick = null, auto = true, base = 100;
+  /* One shared YouTube player, reused for every clip: switching clips is a seek, not a new iframe. */
+  let SP = null, spReady = false, spHost = null;
+  const place = i => {                 /* park the player over clip i's box; it lives inside the feed so it scrolls and wheel-scrolls with it */
+    if (!spHost || !cards[i]) return;
+    last = i;
+    const fr = f.getBoundingClientRect(), r = cards[i].querySelector(".box").getBoundingClientRect();
+    spHost.style.left = (r.left - fr.left + f.scrollLeft) + "px"; spHost.style.top = (r.top - fr.top + f.scrollTop) + "px";
+    spHost.style.width = r.width + "px"; spHost.style.height = r.height + "px";
   };
-  function build(i){
-    if (!isYT || i < 0 || i >= v.moments.length || pool[i]) return;
-    const m = v.moments[i], slot = cards[i].querySelector(".slot");
-    const e = pool[i] = {p:null, ready:false, bad:false};
-    const fail = msg => { e.bad = true; slot.innerHTML = `<div class="empty" style="margin:16px">${esc(msg)}</div>`; };
+  const fail = msg => {
+    if (spHost) spHost.style.visibility = "hidden";
+    const s = cards[cur >= 0 ? cur : last].querySelector(".slot"); if (s) s.innerHTML = `<div class="empty" style="margin:16px">${esc(msg)}</div>`;
+  };
+  function initPlayer(){
+    if (!isYT || SP || !v.moments.length) return;
+    spHost = document.createElement("div"); spHost.className = "sp"; spHost.style.opacity = "0";
+    const inner = document.createElement("div"); spHost.appendChild(inner); f.appendChild(spHost); place(0);
     loadYT().then(() => {
-      if (pool[i] !== e) return;
-      slot.innerHTML = "<div></div>";
-      e.p = new YT.Player(slot.firstChild, {width:"100%", height:"100%", videoId:v.ytId,
-        playerVars:{playsinline:1, rel:0, modestbranding:1, iv_load_policy:3, start:Math.floor(m.start), end:Math.ceil(m.end)},
+      if (!spHost) return;
+      const m0 = v.moments[0];
+      SP = new YT.Player(inner, {width:"100%", height:"100%", videoId:v.ytId,
+        playerVars:{playsinline:1, rel:0, modestbranding:1, iv_load_policy:3, start:Math.floor(m0.start)},
         events:{
-          onReady: () => { e.ready = true; if (cur === i) play(i); },
-          onStateChange: ev => { if (cur === i && ev.data === YT.PlayerState.ENDED) ended(i); },
+          onReady: () => { spReady = true; if (cur >= 0 && loaded !== cur) play(cur); },
+          onStateChange: ev => { if (cur >= 0 && ev.data === YT.PlayerState.ENDED) ended(cur); },
           onError: ev => fail(errMsg(ev.data))
         }});
     }).catch(fail);
   }
   function play(i){
-    const e = pool[i], m = v.moments[i];
-    if (!e || !e.ready) return;           /* onReady will start it */
-    try { e.p.seekTo(m.start, true); e.p.playVideo(); } catch(x){}
+    if (!spReady) return;                 /* onReady will start it */
+    const m = v.moments[i]; loaded = i;
+    try { SP.loadVideoById({videoId:v.ytId, startSeconds:m.start, endSeconds:m.end}); } catch(x){}
   }
   function ended(i){
-    const m = v.moments[i], e = pool[i], next = cards[i + 1];
+    const next = cards[i + 1];
     if (auto && next) { next.scrollIntoView({behavior:"smooth", block:"start"}); return; }
-    try { e.p.loadVideoById({videoId:v.ytId, startSeconds:m.start, endSeconds:m.end}); } catch(x){}
+    play(i);
   }
   function stopCur(){
-    clearTimeout(wait); clearTimeout(warm); clearInterval(tick);
+    clearTimeout(wait); clearInterval(tick);
     if (cur >= 0) {
       cards[cur].classList.remove("on");
-      const e = pool[cur]; if (e && e.ready) { try { e.p.pauseVideo(); if (e.base) e.p.setVolume(e.base); } catch(x){} }
+      if (isYT && spReady) { try { SP.pauseVideo(); SP.setVolume(base); } catch(x){} }
       const vd = cards[cur].querySelector("video"); if (vd) { vd.pause(); vd.ontimeupdate = null; }
       const bx = cards[cur].querySelector(".box"); if (bx) bx.style.opacity = "";
     }
-    cur = -1;
+    cur = -1; loaded = -1;
   }
   /* 1 in the middle of a clip, easing to 0 over the first 0.5s and last 0.7s */
   const fadeAt = (t, m) => Math.max(0, Math.min(1, (t - m.start) / 0.5 + 0.15, (m.end - t) / 0.7));
@@ -717,30 +724,23 @@ function feed(v){
       const nx = cards[i + 1] && cards[i + 1].querySelector("video"); if (nx) nx.preload = "auto";
       return;
     }
-    /* Short wait so fast scrolling doesn't spin up a player per card; a neighbour that was
-       already warmed up starts instantly. */
-    const go = () => {
+    /* Move the shared player onto this card (hidden until the clip is really playing), then seek it to the clip. */
+    place(i); spHost.style.visibility = ""; spHost.style.opacity = "0";
+    wait = setTimeout(() => {
       if (cur !== i) return;
-      build(i); play(i);
-      const box = card.querySelector(".box"); let base = 100;
+      if (loaded !== i) play(i);
       tick = setInterval(() => {
-        const e = pool[i]; if (!e || !e.ready) return;
+        if (!spReady) return;
         try {
-          const t = e.p.getCurrentTime();
+          place(i);
+          const t = SP.getCurrentTime();
           bar.style.width = Math.max(0, Math.min(100, (t - m.start) / (m.end - m.start) * 100)) + "%";
-          const f = fadeAt(t, m);
-          box.style.opacity = f;
-          if (f >= 1) base = e.p.getVolume(); else e.p.setVolume(base * f);
-          e.base = base;
+          const fd = fadeAt(t, m);
+          spHost.style.opacity = fd;
+          if (fd >= 1) base = SP.getVolume(); else SP.setVolume(base * fd);
         } catch(x){}
       }, 100);
-      warm = setTimeout(() => {          /* then preload the clips on either side and drop the rest */
-        if (cur !== i) return;
-        build(i + 1); build(i - 1);
-        Object.keys(pool).forEach(k => { if (Math.abs(+k - i) > 1) destroyAt(k); });
-      }, 500);
-    };
-    if (pool[i] && pool[i].ready) go(); else wait = setTimeout(go, pool[i] ? 0 : 120);
+    }, 80);
   }
 
   const autoBtn = $("#auto");
@@ -755,9 +755,11 @@ function feed(v){
     else if (cur === +e.target.dataset.i) stopCur();
   }), {root:f, threshold:[.6]});
   cards.forEach(c => io.observe(c));
-  if (isYT) { build(0); build(1); }                        /* start loading the first clips right away */
+  if (isYT) initPlayer();                                  /* start loading the player right away */
   else { const v0 = cards[0] && cards[0].querySelector("video"); if (v0) v0.preload = "auto"; }
-  cleanup.push(() => { stopCur(); Object.keys(pool).forEach(destroyAt); io.disconnect(); });
+  const onResize = () => place(last);
+  window.addEventListener("resize", onResize);
+  cleanup.push(() => { stopCur(); try { SP && SP.destroy(); } catch(x){} if (spHost) spHost.remove(); spHost = null; SP = null; window.removeEventListener("resize", onResize); io.disconnect(); });
 }
 
 $("#home").onclick = home;
