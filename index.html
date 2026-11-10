@@ -165,7 +165,7 @@ window.ytReady = new Promise(function(res){
 <div class="app">
   <header>
     <button class="brand" id="home" aria-label="Library"><i></i>Middleground</button>
-    <span class="tag">v0.26</span>
+    <span class="tag">v0.27</span>
   </header>
   <main id="main"></main>
 </div>
@@ -509,6 +509,7 @@ function home(){
         <form class="urlform" id="keyForm"><input id="key" type="text" autocomplete="off" placeholder="API key" aria-label="API key"><button class="btn" type="submit">${hasKey ? "Replace key" : "Save key"}</button>${hasKey ? `<button class="btn danger" id="clearKey" type="button">Remove key</button>` : ""}</form>
       </div></details></div>
     <p class="note">Ad-free videos are public-domain files that play with no ads. Popular videos and reels you build from YouTube links play in YouTube's own player: views and ads still go to the creator, and some creators turn off embedding.</p>
+    <p style="font:500 11px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding-top:12px;border-top:1px solid var(--line)">Made by PJ Duffy</p>
   </div>`;
 
   ["sug", "diy"].forEach(k => {
