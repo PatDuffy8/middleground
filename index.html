@@ -42,6 +42,7 @@ button{cursor:pointer}
 header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:12px;border-bottom:2px solid var(--fg);
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 .brand{font:600 15px/1 var(--sans);letter-spacing:.12em;text-transform:uppercase;display:flex;align-items:center;gap:10px;background:none;border:0;padding:0}
+.brand:hover{opacity:.7}
 .brand i{width:12px;height:18px;background:linear-gradient(var(--fg) 0 42%,transparent 42% 58%,var(--fg) 58%)}
 .tag{font:500 11px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 main{flex:1;min-height:0;overflow:auto;position:relative}
@@ -165,8 +166,8 @@ window.ytReady = new Promise(function(res){
 <body>
 <div class="app">
   <header>
-    <button class="brand" id="home" aria-label="Library"><i></i>Middleground</button>
-    <span class="tag">v0.28</span>
+    <button class="brand" id="home" aria-label="Home" title="Home"><i></i>Middleground</button>
+    <span class="tag">v0.29</span>
   </header>
   <main id="main"></main>
 </div>
@@ -840,7 +841,7 @@ function feed(v){
   cleanup.push(() => { stopCur(); try { SP && SP.destroy(); } catch(x){} if (spHost) spHost.remove(); spHost = null; SP = null; window.removeEventListener("resize", onResize); io.disconnect(); });
 }
 
-$("#home").onclick = home;
+$("#home").onclick = () => { homeTab = "sug"; home(); };
 const bootHash = location.hash;
 home();
 (function(){   /* shared links: #watch/<video>/<clip> open straight into that clip */
