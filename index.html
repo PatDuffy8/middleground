@@ -117,6 +117,7 @@ button.tile:hover{border-color:var(--fg);border-top-color:var(--accent,var(--fg)
 .col{width:100%;max-width:max(280px,min(960px,calc((100dvh - 240px) * 1.778)));margin:0 auto;display:grid;gap:14px}
 .box{aspect-ratio:16/9;background:#111;overflow:hidden;position:relative}
 .slot{position:absolute;inset:0}
+.tapplay{position:absolute;inset:0;z-index:3;width:100%;height:100%;background:rgba(0,0,0,.6);border:0;color:#fff;font:600 14px var(--sans);letter-spacing:.14em;text-transform:uppercase}
 .slot>iframe,.slot>div{width:100%;height:100%}
 .box iframe,.box video{width:100%;height:100%;border:0;display:block;object-fit:contain}
 .box .empty{color:var(--ink-muted);border-color:var(--ink-line)}
@@ -165,7 +166,7 @@ window.ytReady = new Promise(function(res){
 <div class="app">
   <header>
     <button class="brand" id="home" aria-label="Library"><i></i>Middleground</button>
-    <span class="tag">v0.27</span>
+    <span class="tag">v0.28</span>
   </header>
   <main id="main"></main>
 </div>
@@ -713,6 +714,18 @@ function feed(v){
     spHost.style.left = (r.left - fr.left + f.scrollLeft) + "px"; spHost.style.top = (r.top - fr.top + f.scrollTop) + "px";
     spHost.style.width = r.width + "px"; spHost.style.height = r.height + "px";
   };
+  /* Browsers block autoplay until someone taps (shared links land here cold). If a clip hasn't started, ask for one tap. */
+  let nudgeEl = null, nudgeT = null;
+  const clearNudge = () => { clearTimeout(nudgeT); if (nudgeEl) { nudgeEl.remove(); nudgeEl = null; } };
+  const armNudge = (i, playing, go) => {
+    clearNudge();
+    nudgeT = setTimeout(() => {
+      if (cur !== i || playing()) return;
+      const b = document.createElement("button"); b.type = "button"; b.className = "tapplay"; b.textContent = "Tap to play";
+      b.onclick = e => { e.stopPropagation(); clearNudge(); go(); };
+      cards[i].querySelector(".box").appendChild(b); nudgeEl = b;
+    }, 2500);
+  };
   const fail = msg => {
     if (spHost) spHost.style.visibility = "hidden";
     const s = cards[cur >= 0 ? cur : last].querySelector(".slot"); if (s) s.innerHTML = `<div class="empty" style="margin:16px">${esc(msg)}</div>`;
@@ -744,7 +757,7 @@ function feed(v){
     play(i);
   }
   function stopCur(){
-    clearTimeout(wait); clearInterval(tick);
+    clearTimeout(wait); clearInterval(tick); clearNudge();
     if (cur >= 0) {
       cards[cur].classList.remove("on");
       if (isYT && spReady) { try { SP.pauseVideo(); SP.setVolume(base); } catch(x){} }
@@ -766,8 +779,10 @@ function feed(v){
       const vd = card.querySelector("video"), box = card.querySelector(".box");
       let base = vd.volume;
       vd.currentTime = m.start; vd.play().catch(() => {});
+      armNudge(i, () => !vd.paused, () => { vd.currentTime = m.start; vd.play().catch(() => {}); });
       tick = setInterval(() => {      /* soft fade in/out so a clip never ends on a hard cut */
         const t = vd.currentTime;
+        if (nudgeEl && !vd.paused) clearNudge();
         bar.style.width = Math.max(0, Math.min(100, (t - m.start) / (m.end - m.start) * 100)) + "%";
         const f = fadeAt(t, m);
         box.style.opacity = f;
@@ -784,6 +799,7 @@ function feed(v){
     }
     /* Move the shared player onto this card (hidden until the clip is really playing), then seek it to the clip. */
     place(i); spHost.style.visibility = ""; spHost.style.opacity = "0";
+    armNudge(i, () => { try { return spReady && SP.getPlayerState() === 1; } catch(x){ return false; } }, () => { loaded = -1; play(i); });
     wait = setTimeout(() => {
       if (cur !== i) return;
       if (loaded !== i) play(i);
@@ -791,6 +807,7 @@ function feed(v){
         if (!spReady) return;
         try {
           place(i);
+          if (nudgeEl && SP.getPlayerState() === 1) clearNudge();
           const t = SP.getCurrentTime();
           bar.style.width = Math.max(0, Math.min(100, (t - m.start) / (m.end - m.start) * 100)) + "%";
           if (t >= m.start - 1 && t < m.end) seen = true;
